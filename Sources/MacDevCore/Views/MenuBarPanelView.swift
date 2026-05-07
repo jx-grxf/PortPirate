@@ -4,6 +4,7 @@ public struct MenuBarPanelView: View {
   @Bindable private var appState: AppState
   @Environment(\.openWindow) private var openWindow
   @Environment(\.openSettings) private var openSettings
+  @State private var isAppleServicesExpanded = false
 
   public init(appState: AppState) {
     self.appState = appState
@@ -22,6 +23,7 @@ public struct MenuBarPanelView: View {
             ErrorBanner(message: errorMessage)
           }
           serverSection
+          appleServicesSection
           profileSection
           launchdSection
           logsSection
@@ -87,16 +89,57 @@ public struct MenuBarPanelView: View {
     VStack(alignment: .leading, spacing: 8) {
       SectionHeader(title: "Local runtimes", systemImage: "server.rack")
 
-      if appState.servers.isEmpty {
+      if appState.developerServers.isEmpty {
         EmptyStateRow(title: "No listening dev ports", subtitle: "Start a server and MacDev will pick it up.")
       } else {
-        ForEach(appState.servers.prefix(8)) { server in
+        ForEach(appState.developerServers.prefix(8)) { server in
           ServerRowView(appState: appState, server: server)
         }
       }
 
       if let diagnostic = appState.diagnosticResult {
         DiagnosticCard(result: diagnostic)
+      }
+    }
+  }
+
+  @ViewBuilder
+  private var appleServicesSection: some View {
+    let appleServices = appState.appleServiceServers
+
+    if !appleServices.isEmpty {
+      VStack(alignment: .leading, spacing: 8) {
+        Button {
+          withAnimation(.snappy(duration: 0.18)) {
+            isAppleServicesExpanded.toggle()
+          }
+        } label: {
+          HStack(spacing: 6) {
+            Image(systemName: isAppleServicesExpanded ? "chevron.down" : "chevron.right")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .frame(width: 12)
+            SectionHeader(title: "Apple services", systemImage: "apple.logo")
+            Spacer()
+            Text("\(appleServices.count)")
+              .font(.caption.monospacedDigit())
+              .foregroundStyle(.secondary)
+          }
+        }
+        .buttonStyle(.plain)
+
+        if appState.showAppleServices {
+          if isAppleServicesExpanded {
+            ForEach(appleServices.prefix(8)) { server in
+              ServerRowView(appState: appState, server: server, allowsStop: false)
+            }
+          }
+        } else {
+          EmptyStateRow(
+            title: "Apple services hidden",
+            subtitle: "Enable them in Settings if you want system listeners in the menu."
+          )
+        }
       }
     }
   }
@@ -177,7 +220,7 @@ public struct MenuBarPanelView: View {
     if let errorMessage = appState.errorMessage {
       return errorMessage
     }
-    let count = appState.servers.count
+    let count = appState.developerServers.count
     let warnings = appState.warningCount
     if count == 0 { return "No local runtimes detected" }
     if warnings == 0 { return "\(count) active, no warnings" }

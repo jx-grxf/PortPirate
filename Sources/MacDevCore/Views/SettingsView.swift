@@ -92,7 +92,13 @@ public struct SettingsView: View {
 
   private var discoveryTab: some View {
     VStack(alignment: .leading, spacing: 16) {
-      Toggle("Show launchd user agents read-only", isOn: $appState.includeLaunchAgents)
+      SettingsSection("System visibility") {
+        Toggle("Show Apple services in menu bar", isOn: $appState.showAppleServices)
+        Toggle("Show launchd user agents read-only", isOn: $appState.includeLaunchAgents)
+        Text("Apple services are separated from local dev runtimes so system ports like AirPlay do not look like project servers.")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
 
       HStack {
         Text("Workspace profiles")

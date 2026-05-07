@@ -34,6 +34,7 @@ struct EmptyStateRow: View {
 struct ServerRowView: View {
   @Bindable var appState: AppState
   let server: ListeningServer
+  var allowsStop = true
   @State private var showingForceKill = false
 
   var body: some View {
@@ -78,20 +79,24 @@ struct ServerRowView: View {
       .buttonStyle(.borderless)
       .help("Diagnose")
 
-      Button {
-        Task { await appState.stop(server: server, force: false) }
-      } label: {
-        Image(systemName: "stop.circle")
+      if allowsStop {
+        Button {
+          Task { await appState.stop(server: server, force: false) }
+        } label: {
+          Image(systemName: "stop.circle")
+        }
+        .buttonStyle(.borderless)
+        .help("Stop gracefully")
       }
-      .buttonStyle(.borderless)
-      .help("Stop gracefully")
     }
     .padding(10)
     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
     .contextMenu {
       Button("Diagnose") { appState.diagnose(server: server) }
       Button("Open URL") { appState.open(server: server) }
-      Button("Force Kill", role: .destructive) { showingForceKill = true }
+      if allowsStop {
+        Button("Force Kill", role: .destructive) { showingForceKill = true }
+      }
     }
     .confirmationDialog(
       "Force kill PID \(server.processID)?",

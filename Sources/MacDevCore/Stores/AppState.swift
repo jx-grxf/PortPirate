@@ -31,6 +31,10 @@ public final class AppState {
     didSet { UserDefaults.standard.set(confirmForceKill, forKey: Defaults.confirmForceKill) }
   }
 
+  public var showAppleServices: Bool {
+    didSet { UserDefaults.standard.set(showAppleServices, forKey: Defaults.showAppleServices) }
+  }
+
   private let discoveryService: DiscoveryService
   private let profileStore: ProfileStore
   private let processController = ProcessController()
@@ -47,11 +51,13 @@ public final class AppState {
     self.includeLaunchAgents = UserDefaults.standard.object(forKey: Defaults.includeLaunchAgents) as? Bool ?? true
     self.showStatusCount = UserDefaults.standard.object(forKey: Defaults.showStatusCount) as? Bool ?? true
     self.confirmForceKill = UserDefaults.standard.object(forKey: Defaults.confirmForceKill) as? Bool ?? true
+    self.showAppleServices = UserDefaults.standard.object(forKey: Defaults.showAppleServices) as? Bool ?? false
   }
 
   public var status: RuntimeState {
-    if servers.isEmpty { return .idle }
-    if servers.contains(where: { $0.warning != nil }) { return .warning }
+    let visibleServers = developerServers + (showAppleServices ? appleServiceServers : [])
+    if visibleServers.isEmpty { return .idle }
+    if visibleServers.contains(where: { $0.warning != nil }) { return .warning }
     return .ok
   }
 
@@ -61,7 +67,16 @@ public final class AppState {
   }
 
   public var warningCount: Int {
-    servers.filter { $0.warning != nil }.count
+    let visibleServers = developerServers + (showAppleServices ? appleServiceServers : [])
+    return visibleServers.filter { $0.warning != nil }.count
+  }
+
+  public var developerServers: [ListeningServer] {
+    servers.filter { !$0.isAppleService }
+  }
+
+  public var appleServiceServers: [ListeningServer] {
+    servers.filter(\.isAppleService)
   }
 
   public func startAutoRefresh() {
@@ -134,11 +149,19 @@ public final class AppState {
 
   public func stop(server: ListeningServer, force: Bool) async {
     do {
-      try processController.stop(processID: server.processID, force: force)
+      let result = try processController.stop(processID: server.processID, force: force)
       try? await Task.sleep(for: .milliseconds(350))
       await refresh()
+      if result == .alreadyStopped {
+        errorMessage = nil
+      } else if ProcessStatus.isRunning(server.processID) {
+        errorMessage = force
+          ? "PID \(server.processID) is still running after Force Kill."
+          : "PID \(server.processID) did not exit. Use Force Kill from the row menu."
+      }
     } catch {
       errorMessage = error.localizedDescription
+      await refresh()
     }
   }
 
@@ -170,7 +193,7 @@ public final class AppState {
     if let process = startedProcesses[script.id], process.isRunning {
       process.terminate()
     } else {
-      try? processController.stop(processID: script.processID, force: false)
+      _ = try? processController.stop(processID: script.processID, force: false)
     }
     startedProcesses.removeValue(forKey: script.id)
     runningScripts.removeAll { $0.id == script.id }
@@ -195,4 +218,5 @@ private enum Defaults {
   static let includeLaunchAgents = "includeLaunchAgents"
   static let showStatusCount = "showStatusCount"
   static let confirmForceKill = "confirmForceKill"
+  static let showAppleServices = "showAppleServices"
 }

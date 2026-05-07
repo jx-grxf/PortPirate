@@ -46,4 +46,13 @@ public struct ListeningServer: Identifiable, Hashable, Codable, Sendable {
   public var commandLine: String {
     process?.command ?? processName
   }
+
+  public var isAppleService: Bool {
+    let command = commandLine.lowercased()
+    return runtime == .airPlay
+      || command.contains("/system/library/")
+      || command.contains("/usr/libexec/")
+      || processName.lowercased().hasPrefix("com.apple.")
+      || processName == "ControlCenter"
+  }
 }
