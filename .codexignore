@@ -1,0 +1,11 @@
+.git/
+.build/
+dist/
+DerivedData/
+*.xcuserdata/
+*.xcuserstate
+*.o
+*.dSYM/
+node_modules/
+build/
+tmp/
