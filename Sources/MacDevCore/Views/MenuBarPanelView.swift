@@ -3,6 +3,7 @@ import SwiftUI
 public struct MenuBarPanelView: View {
   @Bindable private var appState: AppState
   @Environment(\.openWindow) private var openWindow
+  @Environment(\.openSettings) private var openSettings
 
   public init(appState: AppState) {
     self.appState = appState
@@ -16,7 +17,10 @@ public struct MenuBarPanelView: View {
       Divider()
 
       ScrollView {
-        VStack(alignment: .leading, spacing: 14) {
+        LazyVStack(alignment: .leading, spacing: 14) {
+          if let errorMessage = appState.errorMessage {
+            ErrorBanner(message: errorMessage)
+          }
           serverSection
           profileSection
           launchdSection
@@ -143,12 +147,18 @@ public struct MenuBarPanelView: View {
 
   private var footer: some View {
     HStack {
-      SettingsLink {
+      Button {
+        MacDevWindowFocus.activateApp()
+        openSettings()
+        MacDevWindowFocus.bringSettingsForward()
+      } label: {
         Label("Settings", systemImage: "gearshape")
       }
 
       Button {
+        MacDevWindowFocus.activateApp()
         openWindow(id: "runtime-browser")
+        MacDevWindowFocus.bringWindowForward(title: "Runtime Browser")
       } label: {
         Label("Runtime Browser", systemImage: "sidebar.leading")
       }
@@ -164,10 +174,26 @@ public struct MenuBarPanelView: View {
   }
 
   private var summaryText: String {
+    if let errorMessage = appState.errorMessage {
+      return errorMessage
+    }
     let count = appState.servers.count
     let warnings = appState.warningCount
     if count == 0 { return "No local runtimes detected" }
     if warnings == 0 { return "\(count) active, no warnings" }
     return "\(count) active, \(warnings) warning\(warnings == 1 ? "" : "s")"
+  }
+}
+
+private struct ErrorBanner: View {
+  let message: String
+
+  var body: some View {
+    Label(message, systemImage: "exclamationmark.triangle")
+      .font(.caption)
+      .foregroundStyle(.yellow)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(10)
+      .background(.yellow.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
   }
 }

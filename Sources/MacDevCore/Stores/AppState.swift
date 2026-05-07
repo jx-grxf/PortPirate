@@ -76,6 +76,7 @@ public final class AppState {
   }
 
   public func refresh() async {
+    guard !isRefreshing else { return }
     isRefreshing = true
     defer { isRefreshing = false }
 

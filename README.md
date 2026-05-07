@@ -6,7 +6,7 @@ Native macOS menubar control center for local developer runtimes.
 
 ![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-111111)
 ![Swift](https://img.shields.io/badge/swift-5.9-orange)
-![Status](https://img.shields.io/badge/status-MVP-green)
+![Status](https://img.shields.io/badge/status-preview-6b7280)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 </div>
@@ -17,7 +17,7 @@ MacDev lives in the menu bar and answers the question every developer hits event
 
 > What is running on localhost, and why is this port busy?
 
-Screenshots and demo clips will land with the first tagged preview build.
+Screenshots and demo clips will land with the first tagged preview build. Until then, this repository is a fast-moving native preview.
 
 ## Contents
 
@@ -42,6 +42,28 @@ Screenshots and demo clips will land with the first tagged preview build.
 | Safe actions | Opens URLs, stops exact PIDs gracefully, and requires confirmation before force killing. |
 | Workspace profiles | Reads `package.json` scripts and chooses npm, pnpm, yarn, or bun from lockfiles. |
 | Native settings | Uses a dedicated macOS Settings scene for preferences and discovery rules. |
+
+## What Works Today
+
+- Detect listening TCP ports using macOS-native command line tools.
+- Map ports to process IDs, commands, users, and working directories.
+- Classify common local runtimes such as Vite, Next.js, Astro, Nuxt, Bun, pnpm, yarn, npm, Docker, Homebrew, and AirPlay-like system ports.
+- Diagnose a specific busy port from the menu bar.
+- Open localhost URLs and stop exact PIDs.
+- Read `package.json` scripts from saved workspace folders.
+- Show launchd user agents read-only.
+
+## Safety
+
+MacDev is local-only. It does not collect analytics, upload process data, or use a backend service.
+
+Process control is intentionally precise:
+
+- No `killall node`.
+- No destructive git or workspace actions.
+- Normal stop sends SIGTERM to the exact PID.
+- Force kill is an explicit destructive action with confirmation.
+- System-looking services such as AirPlay, Docker, and Homebrew are explained before suggesting action.
 
 ## Why This Exists
 
@@ -98,6 +120,7 @@ The core scanner and parser logic lives in `MacDevCore` so it can be tested with
 
 ## Roadmap
 
+- App icon and screenshots
 - Signed and notarized preview releases
 - Homebrew Cask
 - Sparkle updates

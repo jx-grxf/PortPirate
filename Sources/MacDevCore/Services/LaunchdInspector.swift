@@ -16,7 +16,9 @@ public enum LaunchdInspectorParser {
     for line in output.split(whereSeparator: \.isNewline) {
       let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
 
-      if trimmed.hasPrefix("label = ") {
+      if let service = parseServiceTableLine(trimmed) {
+        agents.append(service)
+      } else if trimmed.hasPrefix("label = ") {
         flush()
         label = String(trimmed.dropFirst("label = ".count))
         state = nil
@@ -38,6 +40,29 @@ public enum LaunchdInspectorParser {
 
     flush()
     return Array(agents.prefix(limit))
+  }
+
+  private static func parseServiceTableLine(_ line: String) -> LaunchAgentInfo? {
+    guard !line.contains("="), !line.hasPrefix("{"), !line.hasPrefix("}") else {
+      return nil
+    }
+
+    let parts = line.split(whereSeparator: \.isWhitespace).map(String.init)
+    guard parts.count >= 3 else { return nil }
+    guard Int(parts[0]) != nil else { return nil }
+
+    let label = parts.last ?? ""
+    guard label.contains(".") || label.hasPrefix("application.") else { return nil }
+
+    let pid = parts[0]
+    let state = pid == "0" ? "not running" : "running"
+    let lastExitCode = parts.dropFirst().dropLast().joined(separator: " ")
+    return LaunchAgentInfo(
+      label: label,
+      state: state,
+      path: nil,
+      lastExitCode: lastExitCode.isEmpty ? nil : lastExitCode
+    )
   }
 }
 

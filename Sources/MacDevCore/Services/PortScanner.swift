@@ -59,15 +59,20 @@ public enum PortScannerParser {
 
 public actor PortScanner {
   private let runner: CommandRunning
+  private let lsofPath: String
 
-  public init(runner: CommandRunning = ShellCommandRunner()) {
+  public init(runner: CommandRunning = ShellCommandRunner(), lsofPath: String? = nil) {
     self.runner = runner
+    self.lsofPath = lsofPath ?? ShellCommandRunner.existingExecutable(
+      preferred: "/usr/sbin/lsof",
+      fallbacks: ["/usr/bin/lsof", "/opt/homebrew/bin/lsof"]
+    )
   }
 
   public func scan() async throws -> [PortEndpoint] {
     do {
       let output = try await runner.run(
-        "/usr/sbin/lsof",
+        lsofPath,
         ["-nP", "-iTCP", "-sTCP:LISTEN", "-Fpcn"]
       )
       return PortScannerParser.parse(output)
