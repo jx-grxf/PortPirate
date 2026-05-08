@@ -32,7 +32,12 @@ public final class AppState {
   }
 
   public var showAppleServices: Bool {
-    didSet { UserDefaults.standard.set(showAppleServices, forKey: Defaults.showAppleServices) }
+    didSet {
+      UserDefaults.standard.set(showAppleServices, forKey: Defaults.showAppleServices)
+      if !visibleServers.contains(where: { $0.id == selectedServerID }) {
+        selectedServerID = visibleServers.first?.id
+      }
+    }
   }
 
   private let discoveryService: DiscoveryService
@@ -40,6 +45,7 @@ public final class AppState {
   private let processController = ProcessController()
   private var refreshTask: Task<Void, Never>?
   private var startedProcesses: [UUID: Process] = [:]
+  private var hasBootstrapped = false
 
   public init(
     discoveryService: DiscoveryService = DiscoveryService(),
@@ -55,20 +61,22 @@ public final class AppState {
   }
 
   public var status: RuntimeState {
-    let visibleServers = developerServers + (showAppleServices ? appleServiceServers : [])
     if visibleServers.isEmpty { return .idle }
     if visibleServers.contains(where: { $0.warning != nil }) { return .warning }
     return .ok
   }
 
   public var selectedServer: ListeningServer? {
-    guard let selectedServerID else { return servers.first }
-    return servers.first { $0.id == selectedServerID }
+    guard let selectedServerID else { return visibleServers.first }
+    return visibleServers.first { $0.id == selectedServerID } ?? visibleServers.first
   }
 
   public var warningCount: Int {
-    let visibleServers = developerServers + (showAppleServices ? appleServiceServers : [])
     return visibleServers.filter { $0.warning != nil }.count
+  }
+
+  public var visibleServers: [ListeningServer] {
+    developerServers + (showAppleServices ? appleServiceServers : [])
   }
 
   public var developerServers: [ListeningServer] {
@@ -80,10 +88,26 @@ public final class AppState {
   }
 
   public func startAutoRefresh() {
+    startAutoRefresh(immediately: true)
+  }
+
+  public func bootstrap() async {
+    guard !hasBootstrapped else { return }
+    hasBootstrapped = true
+    await loadProfiles()
+    await refresh()
+    startAutoRefresh(immediately: false)
+  }
+
+  private func startAutoRefresh(immediately: Bool) {
     guard refreshTask == nil else { return }
     refreshTask = Task { [weak self] in
+      var shouldRefresh = immediately
       while !Task.isCancelled {
-        await self?.refresh()
+        if shouldRefresh {
+          await self?.refresh()
+        }
+        shouldRefresh = true
         let seconds = max(self?.refreshInterval ?? 8, 2)
         try? await Task.sleep(for: .seconds(seconds))
       }
@@ -99,8 +123,8 @@ public final class AppState {
       let snapshot = try await discoveryService.scan(includeLaunchAgents: includeLaunchAgents)
       servers = snapshot.servers
       launchAgents = snapshot.launchAgents
-      if selectedServerID == nil || !servers.contains(where: { $0.id == selectedServerID }) {
-        selectedServerID = servers.first?.id
+      if selectedServerID == nil || !visibleServers.contains(where: { $0.id == selectedServerID }) {
+        selectedServerID = visibleServers.first?.id
       }
       errorMessage = nil
     } catch {
@@ -168,11 +192,20 @@ public final class AppState {
   public func startScript(_ script: PackageScript, in profile: WorkspaceProfile) {
     let runningID = UUID()
     do {
-      let process = try processController.startScript(profile: profile, script: script) { [weak self] output in
-        Task { @MainActor in
-          self?.appendLog(output, to: runningID)
+      let process = try processController.startScript(
+        profile: profile,
+        script: script,
+        outputHandler: { [weak self] output in
+          Task { @MainActor in
+            self?.appendLog(output, to: runningID)
+          }
+        },
+        terminationHandler: { [weak self] status in
+          Task { @MainActor in
+            self?.markScriptFinished(runningID, status: status)
+          }
         }
-      }
+      )
       startedProcesses[runningID] = process
       runningScripts.append(
         RunningScript(
@@ -196,7 +229,7 @@ public final class AppState {
       _ = try? processController.stop(processID: script.processID, force: false)
     }
     startedProcesses.removeValue(forKey: script.id)
-    runningScripts.removeAll { $0.id == script.id }
+    markScriptFinished(script.id, status: 0)
   }
 
   private func appendLog(_ output: String, to runningID: UUID) {
@@ -210,6 +243,14 @@ public final class AppState {
     if runningScripts[index].lines.count > 300 {
       runningScripts[index].lines.removeFirst(runningScripts[index].lines.count - 300)
     }
+  }
+
+  private func markScriptFinished(_ runningID: UUID, status: Int32) {
+    startedProcesses.removeValue(forKey: runningID)
+    guard let index = runningScripts.firstIndex(where: { $0.id == runningID }) else { return }
+    guard runningScripts[index].isRunning else { return }
+    runningScripts[index].isRunning = false
+    appendLog("Exited with status \(status)", to: runningID)
   }
 }
 

@@ -8,6 +8,7 @@ public struct RunningScript: Identifiable, Hashable {
   public let processID: Int32
   public var lines: [String]
   public var startedAt: Date
+  public var isRunning: Bool
 
   public init(
     id: UUID = UUID(),
@@ -16,7 +17,8 @@ public struct RunningScript: Identifiable, Hashable {
     scriptName: String,
     processID: Int32,
     lines: [String] = [],
-    startedAt: Date = Date()
+    startedAt: Date = Date(),
+    isRunning: Bool = true
   ) {
     self.id = id
     self.profileID = profileID
@@ -25,5 +27,6 @@ public struct RunningScript: Identifiable, Hashable {
     self.processID = processID
     self.lines = lines
     self.startedAt = startedAt
+    self.isRunning = isRunning
   }
 }

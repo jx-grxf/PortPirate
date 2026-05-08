@@ -11,7 +11,7 @@ public struct RuntimeBrowserView: View {
     NavigationSplitView {
       List(selection: $appState.selectedServerID) {
         Section("Local runtimes") {
-          ForEach(appState.servers) { server in
+          ForEach(appState.visibleServers) { server in
             Label {
               VStack(alignment: .leading, spacing: 2) {
                 Text("\(server.runtime.title) :\(server.port)")
@@ -38,11 +38,10 @@ public struct RuntimeBrowserView: View {
       .navigationTitle("MacDev")
       .toolbar {
         ToolbarItem(placement: .primaryAction) {
-          Button {
+          Button("Refresh", systemImage: "arrow.clockwise") {
             Task { await appState.refresh() }
-          } label: {
-            Image(systemName: "arrow.clockwise")
           }
+          .labelStyle(.iconOnly)
           .help("Refresh")
         }
       }
@@ -55,9 +54,7 @@ public struct RuntimeBrowserView: View {
     }
     .frame(minWidth: 760, minHeight: 500)
     .task {
-      appState.startAutoRefresh()
-      await appState.loadProfiles()
-      await appState.refresh()
+      await appState.bootstrap()
     }
   }
 }
@@ -78,7 +75,7 @@ struct ServerInspectorView: View {
           VStack(alignment: .leading, spacing: 2) {
             Text("\(server.runtime.title) on port \(server.port)")
               .font(.title2)
-              .fontWeight(.semibold)
+              .bold()
             Text(server.workspaceName)
               .foregroundStyle(.secondary)
           }
@@ -105,7 +102,7 @@ struct ServerInspectorView: View {
           }
 
           Button(role: .destructive) {
-            showingForceKill = true
+            requestForceKill()
           } label: {
             Label("Force Kill", systemImage: "xmark.octagon")
           }
@@ -154,6 +151,14 @@ struct ServerInspectorView: View {
       Button("Cancel", role: .cancel) {}
     } message: {
       Text(server.commandLine)
+    }
+  }
+
+  private func requestForceKill() {
+    if appState.confirmForceKill {
+      showingForceKill = true
+    } else {
+      Task { await appState.stop(server: server, force: true) }
     }
   }
 }

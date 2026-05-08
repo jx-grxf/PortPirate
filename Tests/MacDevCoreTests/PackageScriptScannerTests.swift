@@ -26,4 +26,14 @@ final class PackageScriptScannerTests: XCTestCase {
     XCTAssertTrue(profile.expectedPorts.contains(5173))
     XCTAssertTrue(profile.expectedPorts.contains(4173))
   }
+
+  func testDetectsCommonPortSyntaxes() {
+    let scripts = [
+      PackageScript(name: "next", command: "PORT=3000 next dev"),
+      PackageScript(name: "vite", command: "vite --port=5174"),
+      PackageScript(name: "serve", command: "astro dev -p4322")
+    ]
+
+    XCTAssertEqual(PackageScriptScanner.expectedPorts(from: scripts), [3000, 4322, 5174])
+  }
 }

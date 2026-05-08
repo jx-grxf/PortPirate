@@ -8,10 +8,21 @@ public struct StatusDot: View {
   }
 
   public var body: some View {
-    Circle()
-      .fill(color)
-      .frame(width: 8, height: 8)
+    Image(systemName: symbolName)
+      .font(.system(size: 10, weight: .bold))
+      .symbolRenderingMode(.hierarchical)
+      .foregroundStyle(color)
+      .frame(width: 12, height: 12)
       .accessibilityLabel(state.title)
+  }
+
+  private var symbolName: String {
+    switch state {
+    case .idle: "circle.fill"
+    case .ok: "checkmark.circle.fill"
+    case .warning: "exclamationmark.triangle.fill"
+    case .problem: "xmark.octagon.fill"
+    }
   }
 
   private var color: Color {

@@ -22,7 +22,8 @@ public enum ProcessControllerError: Error, LocalizedError {
 
 public enum ProcessStatus {
   public static func isRunning(_ processID: Int32) -> Bool {
-    kill(processID, 0) == 0 || errno == EPERM
+    errno = 0
+    return kill(processID, 0) == 0 || errno == EPERM
   }
 }
 
@@ -50,7 +51,8 @@ public extension ProcessController {
   func startScript(
     profile: WorkspaceProfile,
     script: PackageScript,
-    outputHandler: @escaping (String) -> Void
+    outputHandler: @escaping (String) -> Void,
+    terminationHandler: @escaping (Int32) -> Void = { _ in }
   ) throws -> Process {
     let process = Process()
     let pipe = Pipe()
@@ -59,8 +61,20 @@ public extension ProcessController {
     process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
     process.arguments = [profile.packageManager.command, "run", script.name]
     process.currentDirectoryURL = workspaceURL
+    process.environment = ProcessInfo.processInfo.environment.merging(
+      ["PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"],
+      uniquingKeysWith: { _, new in new }
+    )
     process.standardOutput = pipe
     process.standardError = pipe
+    process.terminationHandler = { process in
+      pipe.fileHandleForReading.readabilityHandler = nil
+      let remainingData = pipe.fileHandleForReading.readDataToEndOfFile()
+      if !remainingData.isEmpty {
+        outputHandler(String(decoding: remainingData, as: UTF8.self))
+      }
+      terminationHandler(process.terminationStatus)
+    }
 
     pipe.fileHandleForReading.readabilityHandler = { handle in
       let data = handle.availableData

@@ -15,8 +15,9 @@ public enum PackageScriptScanner {
       .map { PackageScript(name: $0.key, command: $0.value) }
       .sorted { $0.name < $1.name }
 
+    let profileName = rawName?.isEmpty == false ? rawName ?? url.lastPathComponent : url.lastPathComponent
     let profile = WorkspaceProfile(
-      name: rawName?.isEmpty == false ? rawName! : url.lastPathComponent,
+      name: profileName,
       path: url.path,
       packageManager: packageManager(for: url),
       scripts: scripts,
@@ -59,7 +60,7 @@ public enum PackageScriptScanner {
   }
 
   private static func explicitPorts(in command: String) -> [Int] {
-    let pattern = #"(?:(?:--port|-p)\s+|PORT=)(\d{2,5})"#
+    let pattern = #"(?i)(?:(?:--port|-p)(?:\s+|=)|-p|port\s*=\s*)(\d{2,5})"#
     guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
     let range = NSRange(command.startIndex..<command.endIndex, in: command)
     return regex.matches(in: command, range: range).compactMap { match in

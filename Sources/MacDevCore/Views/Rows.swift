@@ -50,7 +50,7 @@ struct ServerRowView: View {
         HStack(spacing: 6) {
           Text(server.runtime.title)
             .font(.callout)
-            .fontWeight(.medium)
+            .bold()
           Text(":\(server.port)")
             .font(.callout.monospacedDigit())
             .foregroundStyle(.secondary)
@@ -63,28 +63,25 @@ struct ServerRowView: View {
 
       Spacer()
 
-      Button {
+      Button("Open localhost:\(server.port)", systemImage: "safari") {
         appState.open(server: server)
-      } label: {
-        Image(systemName: "safari")
       }
+      .labelStyle(.iconOnly)
       .buttonStyle(.borderless)
       .help("Open localhost:\(server.port)")
 
-      Button {
+      Button("Diagnose", systemImage: "stethoscope") {
         appState.diagnose(server: server)
-      } label: {
-        Image(systemName: "stethoscope")
       }
+      .labelStyle(.iconOnly)
       .buttonStyle(.borderless)
       .help("Diagnose")
 
       if allowsStop {
-        Button {
+        Button("Stop gracefully", systemImage: "stop.circle") {
           Task { await appState.stop(server: server, force: false) }
-        } label: {
-          Image(systemName: "stop.circle")
         }
+        .labelStyle(.iconOnly)
         .buttonStyle(.borderless)
         .help("Stop gracefully")
       }
@@ -95,7 +92,7 @@ struct ServerRowView: View {
       Button("Diagnose") { appState.diagnose(server: server) }
       Button("Open URL") { appState.open(server: server) }
       if allowsStop {
-        Button("Force Kill", role: .destructive) { showingForceKill = true }
+        Button("Force Kill", role: .destructive) { requestForceKill() }
       }
     }
     .confirmationDialog(
@@ -111,6 +108,14 @@ struct ServerRowView: View {
       Text(server.commandLine)
     }
   }
+
+  private func requestForceKill() {
+    if appState.confirmForceKill {
+      showingForceKill = true
+    } else {
+      Task { await appState.stop(server: server, force: true) }
+    }
+  }
 }
 
 struct ProfileRowView: View {
@@ -123,7 +128,7 @@ struct ProfileRowView: View {
         VStack(alignment: .leading, spacing: 2) {
           Text(profile.name)
             .font(.callout)
-            .fontWeight(.medium)
+            .bold()
           Text("\(profile.packageManager.rawValue) • \(URL(fileURLWithPath: profile.path).lastPathComponent)")
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -180,23 +185,28 @@ struct RunningScriptRow: View {
 
   var body: some View {
     HStack(spacing: 8) {
-      StatusDot(.ok)
+      StatusDot(script.isRunning ? .ok : .idle)
       VStack(alignment: .leading, spacing: 2) {
         Text("\(script.profileName): \(script.scriptName)")
           .font(.caption)
           .lineLimit(1)
         Text("PID \(script.processID) • \(script.lines.last ?? "waiting for output")")
-          .font(.caption2)
+          .font(.caption)
           .foregroundStyle(.secondary)
           .lineLimit(1)
       }
       Spacer()
-      Button {
-        appState.stopRunningScript(script)
-      } label: {
-        Image(systemName: "stop.circle")
+      if script.isRunning {
+        Button("Stop \(script.scriptName)", systemImage: "stop.circle") {
+          appState.stopRunningScript(script)
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
+      } else {
+        Text("Exited")
+          .font(.caption)
+          .foregroundStyle(.secondary)
       }
-      .buttonStyle(.borderless)
     }
     .padding(8)
     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))

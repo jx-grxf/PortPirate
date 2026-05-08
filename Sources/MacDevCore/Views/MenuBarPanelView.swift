@@ -20,7 +20,9 @@ public struct MenuBarPanelView: View {
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 14) {
           if let errorMessage = appState.errorMessage {
-            ErrorBanner(message: errorMessage)
+            ErrorBanner(message: errorMessage) {
+              Task { await appState.refresh() }
+            }
           }
           serverSection
           appleServicesSection
@@ -37,9 +39,7 @@ public struct MenuBarPanelView: View {
     .frame(width: 440, height: 560)
     .background(.regularMaterial)
     .task {
-      appState.startAutoRefresh()
-      await appState.loadProfiles()
-      await appState.refresh()
+      await appState.bootstrap()
     }
   }
 
@@ -58,11 +58,10 @@ public struct MenuBarPanelView: View {
         ProgressView()
           .controlSize(.small)
       }
-      Button {
+      Button("Refresh", systemImage: "arrow.clockwise") {
         Task { await appState.refresh() }
-      } label: {
-        Image(systemName: "arrow.clockwise")
       }
+      .labelStyle(.iconOnly)
       .buttonStyle(.borderless)
       .help("Refresh")
     }
@@ -75,11 +74,10 @@ public struct MenuBarPanelView: View {
         .textFieldStyle(.roundedBorder)
         .onSubmit { appState.diagnosePortText() }
 
-      Button {
+      Button("Diagnose Port", systemImage: "magnifyingglass") {
         appState.diagnosePortText()
-      } label: {
-        Image(systemName: "magnifyingglass")
       }
+      .labelStyle(.iconOnly)
       .help("Diagnose Port")
     }
     .padding(14)
@@ -230,13 +228,22 @@ public struct MenuBarPanelView: View {
 
 private struct ErrorBanner: View {
   let message: String
+  let retry: () -> Void
 
   var body: some View {
-    Label(message, systemImage: "exclamationmark.triangle")
-      .font(.caption)
-      .foregroundStyle(.yellow)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(10)
-      .background(.yellow.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+    HStack(spacing: 8) {
+      Label(message, systemImage: "exclamationmark.triangle")
+        .lineLimit(2)
+      Spacer(minLength: 8)
+      Button("Retry", systemImage: "arrow.clockwise", action: retry)
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
+        .help("Retry scan")
+    }
+    .font(.caption)
+    .foregroundStyle(.yellow)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(10)
+    .background(.yellow.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
   }
 }

@@ -56,18 +56,27 @@ public struct ShellCommandRunner: CommandRunning {
   private static func runBlocking(_ executable: String, _ arguments: [String], processBox: ProcessBox) throws -> String {
     let process = Process()
     let pipe = Pipe()
+    let outputBuffer = OutputBuffer()
     process.executableURL = URL(fileURLWithPath: executable)
     process.arguments = arguments
     process.standardOutput = pipe
     process.standardError = pipe
     processBox.process = process
 
+    pipe.fileHandleForReading.readabilityHandler = { handle in
+      let data = handle.availableData
+      if !data.isEmpty {
+        outputBuffer.append(data)
+      }
+    }
+
     try process.run()
     process.waitUntilExit()
+    pipe.fileHandleForReading.readabilityHandler = nil
+    outputBuffer.append(pipe.fileHandleForReading.readDataToEndOfFile())
     processBox.process = nil
 
-    let data = pipe.fileHandleForReading.readDataToEndOfFile()
-    let output = String(decoding: data, as: UTF8.self)
+    let output = String(decoding: outputBuffer.data, as: UTF8.self)
 
     guard process.terminationStatus == 0 else {
       throw CommandFailure(
@@ -109,5 +118,25 @@ private final class ProcessBox: @unchecked Sendable {
 
   func terminate() {
     process?.terminate()
+  }
+}
+
+private final class OutputBuffer: @unchecked Sendable {
+  private let lock = NSLock()
+  private var chunks: [Data] = []
+
+  var data: Data {
+    lock.lock()
+    defer { lock.unlock() }
+    return chunks.reduce(into: Data()) { result, chunk in
+      result.append(chunk)
+    }
+  }
+
+  func append(_ data: Data) {
+    guard !data.isEmpty else { return }
+    lock.lock()
+    chunks.append(data)
+    lock.unlock()
   }
 }

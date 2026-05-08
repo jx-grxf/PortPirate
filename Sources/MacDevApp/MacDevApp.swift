@@ -10,8 +10,8 @@ struct MacDevApp: App {
       MenuBarPanelView(appState: appState)
     } label: {
       Label {
-        if appState.showStatusCount, !appState.servers.isEmpty {
-          Text("\(appState.servers.count)")
+        if appState.showStatusCount, !appState.visibleServers.isEmpty {
+          Text("\(appState.visibleServers.count)")
         } else {
           Text("MacDev")
         }

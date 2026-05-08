@@ -10,11 +10,15 @@ public struct SettingsView: View {
   }
 
   public var body: some View {
-    HStack(spacing: 0) {
-      settingsSidebar
-
-      Divider()
-
+    NavigationSplitView {
+      List(SettingsPane.allCases, selection: $selectedPane) { pane in
+        Label(pane.title, systemImage: pane.systemImage)
+          .tag(pane)
+      }
+      .listStyle(.sidebar)
+      .navigationTitle("MacDev")
+      .navigationSplitViewColumnWidth(min: 180, ideal: 190, max: 220)
+    } detail: {
       ScrollView {
         VStack(alignment: .leading, spacing: 18) {
           Text(selectedPane.title)
@@ -28,35 +32,12 @@ public struct SettingsView: View {
       }
       .scrollContentBackground(.visible)
     }
+    .navigationSplitViewStyle(.balanced)
     .frame(width: 680, height: 420)
     .background(.regularMaterial)
     .task {
       await appState.loadProfiles()
     }
-  }
-
-  private var settingsSidebar: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      Text("MacDev")
-        .font(.headline)
-        .padding(.horizontal, 14)
-        .padding(.top, 16)
-        .padding(.bottom, 8)
-
-      ForEach(SettingsPane.allCases) { pane in
-        Button {
-          selectedPane = pane
-        } label: {
-          Label(pane.title, systemImage: pane.systemImage)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .buttonStyle(SettingsSidebarButtonStyle(isSelected: selectedPane == pane))
-      }
-
-      Spacer()
-    }
-    .frame(width: 180)
-    .background(.ultraThinMaterial)
   }
 
   @ViewBuilder
@@ -187,27 +168,6 @@ private enum SettingsPane: String, CaseIterable, Identifiable {
     case .actions: "hand.raised"
     case .notifications: "bell"
     }
-  }
-}
-
-private struct SettingsSidebarButtonStyle: ButtonStyle {
-  let isSelected: Bool
-
-  func makeBody(configuration: Configuration) -> some View {
-    configuration.label
-      .font(.callout)
-      .foregroundStyle(isSelected ? .primary : .secondary)
-      .padding(.horizontal, 12)
-      .padding(.vertical, 8)
-      .background {
-        if isSelected {
-          RoundedRectangle(cornerRadius: 8)
-            .fill(.quaternary)
-        }
-      }
-      .padding(.horizontal, 8)
-      .contentShape(.rect)
-      .opacity(configuration.isPressed ? 0.75 : 1)
   }
 }
 

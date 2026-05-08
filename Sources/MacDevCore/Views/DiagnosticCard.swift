@@ -9,7 +9,7 @@ struct DiagnosticCard: View {
         StatusDot(result.severity)
         Text(result.title)
           .font(.callout)
-          .fontWeight(.semibold)
+          .bold()
       }
 
       Text(result.cause)
@@ -23,9 +23,10 @@ struct DiagnosticCard: View {
 
       if let server = result.server {
         Text("PID \(server.processID) • \(server.commandLine)")
-          .font(.caption2.monospaced())
+          .font(.caption.monospaced())
           .foregroundStyle(.secondary)
           .lineLimit(2)
+          .textSelection(.enabled)
       }
     }
     .padding(10)

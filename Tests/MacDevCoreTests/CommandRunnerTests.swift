@@ -14,4 +14,12 @@ final class CommandRunnerTests: XCTestCase {
       XCTFail("Expected CommandTimeout, got \(error)")
     }
   }
+
+  func testCommandRunnerDrainsLargeOutput() async throws {
+    let runner = ShellCommandRunner(timeout: 2)
+
+    let output = try await runner.run("/bin/sh", ["-c", "yes MacDev | head -n 20000"])
+
+    XCTAssertTrue(output.contains("MacDev"))
+  }
 }
