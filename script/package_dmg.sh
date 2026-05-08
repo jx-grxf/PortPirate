@@ -8,27 +8,33 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
 DMG_PATH="$DIST_DIR/$APP_NAME-$VERSION.dmg"
-STAGING_DIR="$DIST_DIR/dmg-staging"
 
 cd "$ROOT_DIR"
 MACDEV_VERSION="$VERSION" MACDEV_CONFIGURATION=release ./script/build_and_run.sh build-only
 
-rm -rf "$STAGING_DIR"
-rm -f "$DMG_PATH"
-mkdir -p "$STAGING_DIR"
-cp -R "$APP_BUNDLE" "$STAGING_DIR/"
+if ! command -v create-dmg >/dev/null 2>&1; then
+  echo "create-dmg is required for release DMGs. Install it with: brew install create-dmg" >&2
+  exit 1
+fi
 
-hdiutil create \
-  -volname "$APP_NAME $VERSION" \
-  -srcfolder "$STAGING_DIR" \
-  -ov \
-  -format UDZO \
-  "$DMG_PATH"
+rm -f "$DMG_PATH" "$DIST_DIR/$APP_NAME $VERSION.dmg" "$DIST_DIR/$APP_NAME.dmg"
+
+create-dmg \
+  --overwrite \
+  --no-code-sign \
+  --dmg-title="$APP_NAME $VERSION" \
+  "$APP_BUNDLE" \
+  "$DIST_DIR"
+
+if [[ -f "$DIST_DIR/$APP_NAME $VERSION.dmg" ]]; then
+  mv "$DIST_DIR/$APP_NAME $VERSION.dmg" "$DMG_PATH"
+elif [[ -f "$DIST_DIR/$APP_NAME.dmg" ]]; then
+  mv "$DIST_DIR/$APP_NAME.dmg" "$DMG_PATH"
+fi
 
 if [[ ! -f "$DMG_PATH" ]]; then
   echo "Expected DMG was not created at $DMG_PATH" >&2
   exit 1
 fi
 
-rm -rf "$STAGING_DIR"
 echo "$DMG_PATH"

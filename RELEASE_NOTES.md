@@ -1,6 +1,6 @@
-# MacDev 0.1.0 Preview
+# MacDev 0.1.1 Preview
 
-First public preview of MacDev, a native macOS menu bar utility for finding and fixing local developer runtimes.
+Preview build of MacDev, a native macOS menu bar utility for finding and fixing local developer runtimes.
 
 ## Highlights
 
@@ -14,6 +14,7 @@ First public preview of MacDev, a native macOS menu bar utility for finding and 
 
 ## Fixed
 
+- Rebuilt the release DMG with `create-dmg` so Finder opens a polished installer window instead of a raw one-item disk image.
 - Fixed stale process stops so already-exited PIDs refresh cleanly instead of showing a hard failure.
 - Fixed Settings and Runtime Browser focus from a no-Dock menu bar app.
 - Fixed launchd parsing for real `launchctl print gui/$UID` service table output.

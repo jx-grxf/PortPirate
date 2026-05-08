@@ -95,7 +95,7 @@ Local development on macOS gets messy fast: `npm run dev` exits, a server keeps 
 - macOS 14 or newer
 - Xcode 15+ or Apple Swift toolchain
 - Command line tools with `swift`, `lsof`, `ps`, and `launchctl`
-- `hdiutil` and `codesign` for local preview packaging
+- `create-dmg`, `hdiutil`, and `codesign` for local preview packaging
 
 ## Quick Start
 
