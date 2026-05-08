@@ -8,6 +8,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
 DMG_PATH="$DIST_DIR/$APP_NAME-$VERSION.dmg"
+STAGING_DIR="$DIST_DIR/dmg-staging"
 
 cd "$ROOT_DIR"
 MACDEV_VERSION="$VERSION" MACDEV_CONFIGURATION=release ./script/build_and_run.sh build-only
@@ -17,6 +18,7 @@ if ! command -v create-dmg >/dev/null 2>&1; then
   exit 1
 fi
 
+rm -rf "$STAGING_DIR"
 rm -f "$DMG_PATH" "$DIST_DIR/$APP_NAME $VERSION.dmg" "$DIST_DIR/$APP_NAME.dmg"
 
 CREATE_DMG_HELP="$(create-dmg --help 2>&1 || true)"
@@ -27,8 +29,23 @@ if [[ "$CREATE_DMG_HELP" == *"--dmg-title"* ]]; then
     --dmg-title="$APP_NAME $VERSION" \
     "$APP_BUNDLE" \
     "$DIST_DIR"
+elif [[ "$CREATE_DMG_HELP" == *"--volname"* ]]; then
+  mkdir -p "$STAGING_DIR"
+  cp -R "$APP_BUNDLE" "$STAGING_DIR/"
+  create-dmg \
+    --volname "$APP_NAME $VERSION" \
+    --window-size 640 420 \
+    --icon-size 96 \
+    --icon "$APP_NAME.app" 170 190 \
+    --hide-extension "$APP_NAME.app" \
+    --app-drop-link 470 190 \
+    "$DMG_PATH" \
+    "$STAGING_DIR"
 else
-  create-dmg "$APP_BUNDLE" "$DIST_DIR"
+  mkdir -p "$STAGING_DIR"
+  cp -R "$APP_BUNDLE" "$STAGING_DIR/"
+  ln -s /Applications "$STAGING_DIR/Applications"
+  create-dmg "$DMG_PATH" "$STAGING_DIR"
 fi
 
 if [[ -f "$DIST_DIR/$APP_NAME $VERSION.dmg" ]]; then
@@ -42,4 +59,5 @@ if [[ ! -f "$DMG_PATH" ]]; then
   exit 1
 fi
 
+rm -rf "$STAGING_DIR"
 echo "$DMG_PATH"
