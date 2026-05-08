@@ -8,6 +8,9 @@ Native macOS menubar control center for local developer runtimes.
 ![Swift](https://img.shields.io/badge/swift-5.9-orange)
 ![Status](https://img.shields.io/badge/status-preview-6b7280)
 ![License](https://img.shields.io/badge/license-MIT-blue)
+![CI](https://github.com/jx-grxf/MacDev/actions/workflows/ci.yml/badge.svg)
+
+<img src="Assets/AppIcon/AppIcon1024.png" alt="MacDev app icon" width="104">
 
 </div>
 
@@ -17,7 +20,7 @@ MacDev lives in the menu bar and answers the question every developer hits event
 
 > What is running on localhost, and why is this port busy?
 
-Screenshots and demo clips will land with the first tagged preview build. Until then, this repository is a fast-moving native preview.
+The first preview focuses on the real control surface: a menu bar panel, a dedicated runtime browser, and native Settings for discovery rules.
 
 ## Contents
 
@@ -92,6 +95,7 @@ Local development on macOS gets messy fast: `npm run dev` exits, a server keeps 
 - macOS 14 or newer
 - Xcode 15+ or Apple Swift toolchain
 - Command line tools with `swift`, `lsof`, `ps`, and `launchctl`
+- `hdiutil` and `codesign` for local preview packaging
 
 ## Quick Start
 
@@ -100,6 +104,12 @@ Local development on macOS gets messy fast: `npm run dev` exits, a server keeps 
 ```
 
 The script builds MacDev, stages `dist/MacDev.app`, and launches the app bundle.
+
+To create a local preview DMG:
+
+```bash
+MACDEV_VERSION=0.1.0 ./script/package_dmg.sh
+```
 
 ## Usage
 
@@ -118,10 +128,12 @@ swift test
 
 The core scanner and parser logic lives in `MacDevCore` so it can be tested without launching the app.
 
+Tagged releases are built by GitHub Actions. Push `v<version>` and the release workflow builds a release-mode app bundle, creates a DMG, verifies the signature and image, then attaches the DMG to the GitHub Release.
+
 ## Roadmap
 
-- App icon and screenshots
-- Signed and notarized preview releases
+- Screenshots and demo clips
+- Developer ID signed and notarized preview releases
 - Homebrew Cask
 - Sparkle updates
 - Collision and crash notification history

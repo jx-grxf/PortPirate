@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version without the leading v"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Test
+        run: swift test
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            tag="${GITHUB_REF_NAME}"
+            version="${tag#v}"
+          else
+            version="${{ inputs.version }}"
+            tag="v${version#v}"
+            version="${version#v}"
+          fi
+          echo "tag=$tag" >>"$GITHUB_OUTPUT"
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+
+      - name: Build DMG
+        env:
+          MACDEV_VERSION: ${{ steps.version.outputs.version }}
+        run: ./script/package_dmg.sh
+
+      - name: Verify app signature
+        run: codesign --verify --deep --strict dist/MacDev.app
+
+      - name: Verify DMG
+        env:
+          MACDEV_VERSION: ${{ steps.version.outputs.version }}
+        run: hdiutil imageinfo "dist/MacDev-${MACDEV_VERSION}.dmg" >/dev/null
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MacDev-${{ steps.version.outputs.version }}-dmg
+          path: dist/MacDev-${{ steps.version.outputs.version }}.dmg
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          asset="dist/MacDev-${RELEASE_VERSION}.dmg"
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "$asset#MacDev-${RELEASE_VERSION}.dmg" --clobber
+          else
+            gh release create "$RELEASE_TAG" \
+              "$asset#MacDev-${RELEASE_VERSION}.dmg" \
+              --target "$GITHUB_SHA" \
+              --title "MacDev ${RELEASE_VERSION}" \
+              --notes-file RELEASE_NOTES.md
+          fi
