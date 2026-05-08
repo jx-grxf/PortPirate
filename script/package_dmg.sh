@@ -19,12 +19,17 @@ fi
 
 rm -f "$DMG_PATH" "$DIST_DIR/$APP_NAME $VERSION.dmg" "$DIST_DIR/$APP_NAME.dmg"
 
-create-dmg \
-  --overwrite \
-  --no-code-sign \
-  --dmg-title="$APP_NAME $VERSION" \
-  "$APP_BUNDLE" \
-  "$DIST_DIR"
+CREATE_DMG_HELP="$(create-dmg --help 2>&1 || true)"
+if [[ "$CREATE_DMG_HELP" == *"--dmg-title"* ]]; then
+  create-dmg \
+    --overwrite \
+    --no-code-sign \
+    --dmg-title="$APP_NAME $VERSION" \
+    "$APP_BUNDLE" \
+    "$DIST_DIR"
+else
+  create-dmg "$APP_BUNDLE" "$DIST_DIR"
+fi
 
 if [[ -f "$DIST_DIR/$APP_NAME $VERSION.dmg" ]]; then
   mv "$DIST_DIR/$APP_NAME $VERSION.dmg" "$DMG_PATH"
