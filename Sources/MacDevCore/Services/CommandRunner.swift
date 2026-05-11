@@ -38,11 +38,11 @@ public struct ShellCommandRunner: CommandRunning {
     return try await withThrowingTaskGroup(of: String.self) { group in
       let timeout = timeout
       group.addTask(priority: .utility) {
-        try Self.runBlocking(executable, arguments, processBox: processBox)
+        try Self.runBlocking(executable, arguments, timeout: timeout, processBox: processBox)
       }
       group.addTask {
         try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
-        processBox.terminate()
+        processBox.terminateForTimeout()
         throw CommandTimeout(executable: executable, arguments: arguments, seconds: timeout)
       }
 
@@ -54,7 +54,12 @@ public struct ShellCommandRunner: CommandRunning {
     }
   }
 
-  private static func runBlocking(_ executable: String, _ arguments: [String], processBox: ProcessBox) throws -> String {
+  private static func runBlocking(
+    _ executable: String,
+    _ arguments: [String],
+    timeout: TimeInterval,
+    processBox: ProcessBox
+  ) throws -> String {
     let process = Process()
     let pipe = Pipe()
     let outputBuffer = OutputBuffer()
@@ -73,11 +78,18 @@ public struct ShellCommandRunner: CommandRunning {
 
     try process.run()
     process.waitUntilExit()
+    let didTimeOut = processBox.didTimeOut
     pipe.fileHandleForReading.readabilityHandler = nil
-    outputBuffer.append(pipe.fileHandleForReading.readDataToEndOfFile())
+    if !didTimeOut {
+      outputBuffer.append(pipe.fileHandleForReading.readDataToEndOfFile())
+    }
     processBox.process = nil
 
     let output = String(decoding: outputBuffer.data, as: UTF8.self)
+
+    if didTimeOut {
+      throw CommandTimeout(executable: executable, arguments: arguments, seconds: timeout)
+    }
 
     guard process.terminationStatus == 0 else {
       throw CommandFailure(
@@ -103,6 +115,7 @@ public struct ShellCommandRunner: CommandRunning {
 private final class ProcessBox: @unchecked Sendable {
   private let lock = NSLock()
   private var storedProcess: Process?
+  private var timedOut = false
 
   var process: Process? {
     get {
@@ -117,7 +130,18 @@ private final class ProcessBox: @unchecked Sendable {
     }
   }
 
-  func terminate() {
+  var didTimeOut: Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return timedOut
+  }
+
+  func terminateForTimeout() {
+    lock.lock()
+    timedOut = true
+    let process = storedProcess
+    lock.unlock()
+
     guard let process, process.isRunning else { return }
     process.terminate()
 
