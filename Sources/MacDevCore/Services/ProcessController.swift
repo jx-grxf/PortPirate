@@ -61,10 +61,7 @@ public extension ProcessController {
     process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
     process.arguments = [profile.packageManager.command, "run", script.name]
     process.currentDirectoryURL = workspaceURL
-    process.environment = ProcessInfo.processInfo.environment.merging(
-      ["PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"],
-      uniquingKeysWith: { _, new in new }
-    )
+    process.environment = ProcessControllerEnvironment.scriptEnvironment()
     process.standardOutput = pipe
     process.standardError = pipe
     process.terminationHandler = { process in
@@ -85,5 +82,30 @@ public extension ProcessController {
 
     try process.run()
     return process
+  }
+}
+
+enum ProcessControllerEnvironment {
+  private static let defaultToolPaths = [
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+    "/usr/bin",
+    "/bin",
+    "/usr/sbin",
+    "/sbin"
+  ]
+
+  static func scriptEnvironment(base: [String: String] = ProcessInfo.processInfo.environment) -> [String: String] {
+    var environment = base
+    let existingPaths = (base["PATH"] ?? "")
+      .split(separator: ":", omittingEmptySubsequences: true)
+      .map(String.init)
+    let mergedPaths = (defaultToolPaths + existingPaths).reduce(into: [String]()) { result, path in
+      if !result.contains(path) {
+        result.append(path)
+      }
+    }
+    environment["PATH"] = mergedPaths.joined(separator: ":")
+    return environment
   }
 }

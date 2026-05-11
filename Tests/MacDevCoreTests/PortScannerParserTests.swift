@@ -24,4 +24,18 @@ final class PortScannerParserTests: XCTestCase {
     XCTAssertEqual(endpoints[2].processName, "ControlCenter")
     XCTAssertEqual(endpoints[2].port, 5000)
   }
+
+  func testParserResetsCommandWhenNewPidHasNoCommandField() {
+    let output = """
+    p100
+    cnode
+    n*:3000
+    p200
+    n*:8080
+    """
+
+    let endpoints = PortScannerParser.parse(output)
+
+    XCTAssertEqual(endpoints.map(\.processName), ["node", "process"])
+  }
 }

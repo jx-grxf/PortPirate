@@ -20,6 +20,7 @@ public enum PortScannerParser {
       switch field {
       case "p":
         currentPID = Int32(value)
+        currentCommand = "process"
       case "c":
         currentCommand = value.isEmpty ? "process" : value
       case "n":

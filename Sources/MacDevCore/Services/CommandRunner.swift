@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 public protocol CommandRunning: Sendable {
@@ -117,7 +118,17 @@ private final class ProcessBox: @unchecked Sendable {
   }
 
   func terminate() {
-    process?.terminate()
+    guard let process, process.isRunning else { return }
+    process.terminate()
+
+    let deadline = Date().addingTimeInterval(0.25)
+    while process.isRunning && Date() < deadline {
+      Thread.sleep(forTimeInterval: 0.01)
+    }
+
+    if process.isRunning {
+      Darwin.kill(process.processIdentifier, SIGKILL)
+    }
   }
 }
 

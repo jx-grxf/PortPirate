@@ -31,7 +31,8 @@ final class PackageScriptScannerTests: XCTestCase {
     let scripts = [
       PackageScript(name: "next", command: "PORT=3000 next dev"),
       PackageScript(name: "vite", command: "vite --port=5174"),
-      PackageScript(name: "serve", command: "astro dev -p4322")
+      PackageScript(name: "serve", command: "astro dev -p4322"),
+      PackageScript(name: "broken", command: "vite --port 70000")
     ]
 
     XCTAssertEqual(PackageScriptScanner.expectedPorts(from: scripts), [3000, 4322, 5174])
