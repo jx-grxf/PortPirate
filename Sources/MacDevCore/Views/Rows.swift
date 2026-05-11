@@ -52,6 +52,7 @@ struct ServerRowView: View {
           Text(server.displayTitle)
             .font(.callout)
             .bold()
+            .lineLimit(1)
           Text(":\(server.displayPort)")
             .font(.callout.monospacedDigit())
             .foregroundStyle(.secondary)
@@ -142,12 +143,16 @@ struct ProfileRowView: View {
           .font(.caption)
           .foregroundStyle(.secondary)
       } else {
-        HStack {
-          ForEach(profile.scripts.prefix(3)) { script in
-            Button(script.name) {
-              appState.startScript(script, in: profile)
+        ScrollView(.horizontal, showsIndicators: false) {
+          HStack(spacing: 6) {
+            ForEach(profile.scripts.prefix(3)) { script in
+              Button(script.name) {
+                appState.startScript(script, in: profile)
+              }
+              .controlSize(.small)
+              .lineLimit(1)
+              .help(script.command)
             }
-            .controlSize(.small)
           }
         }
       }
@@ -203,6 +208,7 @@ struct RunningScriptRow: View {
         }
         .labelStyle(.iconOnly)
         .buttonStyle(.borderless)
+        .help("Stop \(script.scriptName)")
       } else {
         Text("Exited")
           .font(.caption)

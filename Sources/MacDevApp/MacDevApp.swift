@@ -44,7 +44,7 @@ private struct MenuBarGlyph: View {
 
       if state == .warning || state == .problem {
         Circle()
-          .fill(state == .problem ? .red : .secondary)
+          .fill(state == .problem ? .red : .yellow)
           .frame(width: 5, height: 5)
           .offset(x: 2, y: -2)
       }

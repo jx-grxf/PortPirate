@@ -54,6 +54,7 @@ public struct MenuBarPanelView: View {
         Text(summaryText)
           .font(.caption)
           .foregroundStyle(.secondary)
+          .lineLimit(1)
       }
       Spacer()
       if appState.isRefreshing {
@@ -66,15 +67,17 @@ public struct MenuBarPanelView: View {
       .labelStyle(.iconOnly)
       .buttonStyle(.borderless)
       .help("Refresh")
+      .disabled(appState.isRefreshing)
     }
     .padding(14)
   }
 
   private var diagnosisBar: some View {
     HStack(spacing: 8) {
-      TextField("Why is port 3000 busy?", text: $appState.diagnosisPortText)
+      TextField("3000", text: $appState.diagnosisPortText)
         .textFieldStyle(.roundedBorder)
         .onSubmit { appState.diagnosePortText() }
+        .accessibilityLabel("Port to diagnose")
 
       Button("Diagnose Port", systemImage: "magnifyingglass") {
         appState.diagnosePortText()
@@ -292,7 +295,7 @@ private struct ErrorBanner: View {
         .help("Retry scan")
     }
     .font(.caption)
-    .foregroundStyle(.yellow)
+    .foregroundStyle(.primary)
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(10)
     .background(.yellow.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
