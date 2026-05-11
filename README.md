@@ -17,7 +17,7 @@ Native macOS menu bar control center for local developer runtimes.
 </div>
 
 > [!TIP]
-> MacDev is built for the exact moment when `localhost:3000` is busy, a dev server moved ports, or a Node process is still running after the terminal is gone.
+> MacDev is built for the exact moment when: "What the hell is running on port 3000?" "What dev server is blocking port 5050?" "What localhost instances are running?"
 
 ## Showcase
 
