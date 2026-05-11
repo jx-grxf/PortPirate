@@ -21,6 +21,10 @@ Native macOS menu bar control center for local developer runtimes.
 
 ## Showcase
 
+<p align="center">
+  <img src="docs/assets/macdev-showcase.png" alt="MacDev menu bar runtime panel showing local runtimes, warnings, diagnostics, and system listeners" width="720">
+</p>
+
 MacDev stays in the macOS menu bar and gives local development servers a visible control surface: scan active ports, identify the owning process, open the right localhost URL, diagnose collisions, and stop exact PIDs without broad destructive commands.
 
 It is intentionally local-first. There is no account, cloud sync, analytics pipeline, or backend service.

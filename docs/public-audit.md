@@ -10,6 +10,7 @@ MacDev now presents as a focused native macOS developer utility instead of an in
 
 - Added a visible GitHub Markdown tip alert at the top of the README.
 - Linked CI and release badges to the relevant GitHub surfaces.
+- Added the real menu bar panel screenshot as a rounded GitHub README showcase.
 - Moved preview signing and notarization limitations into a clear trust note.
 - Added CONTRIBUTING and SECURITY files for GitHub community profile coverage.
 - Added issue forms and a pull request template so external feedback arrives with usable context.
@@ -19,6 +20,6 @@ MacDev now presents as a focused native macOS developer utility instead of an in
 ## Remaining Public Risks
 
 - Preview releases are still ad-hoc signed and not notarized.
-- README would be stronger with screenshots or a short demo clip.
+- A short demo clip would make the interaction model clearer than a screenshot alone.
 - The release page should keep using clear notes with Highlights, Fixed, Improved, PRs, and Known Limitations.
 - A Homebrew Cask would make installation feel more mature once notarization is in place.
