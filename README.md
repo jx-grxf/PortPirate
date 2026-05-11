@@ -9,8 +9,11 @@ Native macOS menubar control center for local developer runtimes.
 ![Status](https://img.shields.io/badge/status-preview-6b7280)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/jx-grxf/MacDev/actions/workflows/ci.yml/badge.svg)
+[![Release](https://img.shields.io/github/v/release/jx-grxf/MacDev?label=release)](https://github.com/jx-grxf/MacDev/releases/latest)
 
 <img src="Assets/AppIcon/AppIcon1024.png" alt="MacDev app icon" width="104">
+
+[Download latest preview](https://github.com/jx-grxf/MacDev/releases/latest)
 
 </div>
 
@@ -25,6 +28,7 @@ The first preview focuses on the real control surface: a menu bar panel, a dedic
 ## Contents
 
 - [Highlights](#highlights)
+- [Download](#download)
 - [Why This Exists](#why-this-exists)
 - [Current Workflow](#current-workflow)
 - [Tech Stack](#tech-stack)
@@ -45,6 +49,12 @@ The first preview focuses on the real control surface: a menu bar panel, a dedic
 | Safe actions | Opens URLs, stops exact PIDs gracefully, and requires confirmation before force killing. |
 | Workspace profiles | Reads `package.json` scripts and chooses npm, pnpm, yarn, or bun from lockfiles. |
 | Native settings | Uses a dedicated macOS Settings scene for preferences and discovery rules. |
+
+## Download
+
+The latest preview DMG is attached to the current GitHub Release:
+
+[MacDev Releases](https://github.com/jx-grxf/MacDev/releases/latest)
 
 ## What Works Today
 
