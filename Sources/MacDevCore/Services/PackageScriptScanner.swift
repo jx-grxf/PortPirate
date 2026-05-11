@@ -65,7 +65,10 @@ public enum PackageScriptScanner {
     let range = NSRange(command.startIndex..<command.endIndex, in: command)
     return regex.matches(in: command, range: range).compactMap { match in
       guard let portRange = Range(match.range(at: 1), in: command) else { return nil }
-      return Int(command[portRange])
+      guard let port = Int(command[portRange]), (1...65535).contains(port) else {
+        return nil
+      }
+      return port
     }
   }
 }

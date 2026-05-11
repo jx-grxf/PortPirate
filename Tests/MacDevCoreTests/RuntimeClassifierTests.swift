@@ -28,4 +28,27 @@ final class RuntimeClassifierTests: XCTestCase {
     XCTAssertEqual(runtime, .airPlay)
     XCTAssertNotNil(RuntimeClassifier.warning(for: runtime, port: 5000, command: "ControlCenter"))
   }
+
+  func testUnknownListenerIsNotAStatusWarning() {
+    let runtime = RuntimeClassifier.classify(
+      processName: "rapportd",
+      command: "/usr/libexec/rapportd",
+      port: 49152,
+      currentDirectory: "/"
+    )
+
+    XCTAssertEqual(runtime, .unknown)
+    XCTAssertNil(RuntimeClassifier.warning(for: runtime, port: 49152, command: "/usr/libexec/rapportd"))
+  }
+
+  func testOpenClawInstalledThroughHomebrewNodeModulesIsNotHomebrewService() {
+    let runtime = RuntimeClassifier.classify(
+      processName: "node",
+      command: "/opt/homebrew/lib/node_modules/openclaw/dist/index.js gateway --port 18789",
+      port: 18789,
+      currentDirectory: "/Users/johannesgrof/.openclaw"
+    )
+
+    XCTAssertEqual(runtime, .openClaw)
+  }
 }

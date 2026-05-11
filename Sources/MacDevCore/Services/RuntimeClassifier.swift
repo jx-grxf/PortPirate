@@ -16,8 +16,13 @@ public enum RuntimeClassifier {
     if haystack.contains("pnpm") { return .pnpm }
     if haystack.contains("yarn") { return .yarn }
     if haystack.contains("npm") { return .npm }
+    if haystack.contains("openclaw") { return .openClaw }
     if haystack.contains("docker") || haystack.contains("com.docker") { return .docker }
-    if haystack.contains("homebrew") || haystack.contains("/cellar/") { return .brew }
+    if haystack.contains("homebrew.mxcl")
+      || haystack.contains("brew services")
+      || (haystack.contains("/cellar/") && !haystack.contains("/node_modules/")) {
+      return .brew
+    }
     if haystack.contains("launchd") { return .launchd }
     if haystack.contains("node") { return .node }
 
@@ -29,12 +34,8 @@ public enum RuntimeClassifier {
       return "macOS AirPlay can reserve this port. Do not kill it blindly."
     }
 
-    if port == 5000 || port == 7000 {
+    if runtime.isPrimaryRuntime, port == 5000 || port == 7000 {
       return "This port is commonly used by macOS AirPlay or local web servers."
-    }
-
-    if runtime == .unknown {
-      return "Unknown listener. Diagnose before stopping."
     }
 
     if runtime == .vite, port != 5173 {

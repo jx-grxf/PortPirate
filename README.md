@@ -2,29 +2,39 @@
 
 # MacDev
 
-Native macOS menubar control center for local developer runtimes.
+Native macOS menu bar control center for local developer runtimes.
 
+[![CI](https://github.com/jx-grxf/MacDev/actions/workflows/ci.yml/badge.svg)](https://github.com/jx-grxf/MacDev/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/jx-grxf/MacDev?label=release)](https://github.com/jx-grxf/MacDev/releases/latest)
 ![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-111111)
 ![Swift](https://img.shields.io/badge/swift-5.9-orange)
-![Status](https://img.shields.io/badge/status-preview-6b7280)
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![CI](https://github.com/jx-grxf/MacDev/actions/workflows/ci.yml/badge.svg)
 
-<img src="Assets/AppIcon/AppIcon1024.png" alt="MacDev app icon" width="104">
+<img src="Assets/AppIcon/AppIcon1024.png" alt="MacDev app icon" width="112">
+
+[Download latest preview](https://github.com/jx-grxf/MacDev/releases/latest) | [Release runbook](docs/release.md) | [Security](SECURITY.md)
 
 </div>
 
+> [!TIP]
+> MacDev is built for the exact moment when `localhost:3000` is busy, a dev server moved ports, or a Node process is still running after the terminal is gone.
+
 ## Showcase
 
-MacDev lives in the menu bar and answers the question every developer hits eventually:
+<p align="center">
+  <img src="docs/assets/macdev-showcase.png" alt="MacDev menu bar runtime panel showing local runtimes, warnings, diagnostics, and system listeners" width="720">
+</p>
 
-> What is running on localhost, and why is this port busy?
+MacDev stays in the macOS menu bar and gives local development servers a visible control surface: scan active ports, identify the owning process, open the right localhost URL, diagnose collisions, and stop exact PIDs without broad destructive commands.
 
-The first preview focuses on the real control surface: a menu bar panel, a dedicated runtime browser, and native Settings for discovery rules.
+It is intentionally local-first. There is no account, cloud sync, analytics pipeline, or backend service.
 
 ## Contents
 
 - [Highlights](#highlights)
+- [Download](#download)
+- [What Works Today](#what-works-today)
+- [Safety and Trust](#safety-and-trust)
 - [Why This Exists](#why-this-exists)
 - [Current Workflow](#current-workflow)
 - [Tech Stack](#tech-stack)
@@ -32,19 +42,30 @@ The first preview focuses on the real control surface: a menu bar panel, a dedic
 - [Quick Start](#quick-start)
 - [Usage](#usage)
 - [Development](#development)
+- [Release Process](#release-process)
 - [Roadmap](#roadmap)
+- [Contributing](#contributing)
 - [License](#license)
 
 ## Highlights
 
 | Feature | Description |
 | --- | --- |
-| Menubar-first | Shows active local dev runtimes without becoming another full-time window. |
-| Port discovery | Maps listening TCP ports to process IDs, commands, owners, and likely runtimes. |
-| Diagnosis | Explains common causes like busy ports, Vite port fallback, Next defaults, and AirPlay conflicts. |
-| Safe actions | Opens URLs, stops exact PIDs gracefully, and requires confirmation before force killing. |
-| Workspace profiles | Reads `package.json` scripts and chooses npm, pnpm, yarn, or bun from lockfiles. |
-| Native settings | Uses a dedicated macOS Settings scene for preferences and discovery rules. |
+| Menu bar first | Keeps local runtimes visible without becoming another full-time desktop window. |
+| Port discovery | Maps listening TCP ports to process IDs, commands, owners, working directories, and likely runtimes. |
+| Collision diagnosis | Explains common causes like busy ports, Vite fallback ports, Next.js defaults, and AirPlay conflicts. |
+| Precise process control | Opens URLs, sends SIGTERM to exact PIDs, and gates force kill behind an explicit confirmation. |
+| Workspace profiles | Reads `package.json` scripts and detects npm, pnpm, yarn, or bun from lockfiles. |
+| Native macOS shell | Uses SwiftUI, `MenuBarExtra`, Settings, and a dedicated runtime browser instead of a web wrapper. |
+
+## Download
+
+The current preview DMG is attached to the latest GitHub Release:
+
+[Download MacDev from GitHub Releases](https://github.com/jx-grxf/MacDev/releases/latest)
+
+> [!IMPORTANT]
+> Preview builds are ad-hoc signed for bundle integrity but are not Developer ID notarized yet. macOS may show a Gatekeeper warning until notarized releases ship.
 
 ## What Works Today
 
@@ -56,21 +77,21 @@ The first preview focuses on the real control surface: a menu bar panel, a dedic
 - Read `package.json` scripts from saved workspace folders.
 - Show launchd user agents read-only.
 
-## Safety
+## Safety and Trust
 
 MacDev is local-only. It does not collect analytics, upload process data, or use a backend service.
 
-Process control is intentionally precise:
+Process control is deliberately narrow:
 
 - No `killall node`.
 - No destructive git or workspace actions.
 - Normal stop sends SIGTERM to the exact PID.
 - Force kill is an explicit destructive action with confirmation.
-- System-looking services such as AirPlay, Docker, and Homebrew are explained before suggesting action.
+- System-looking services such as AirPlay, Docker, and Homebrew are explained before action is suggested.
 
 ## Why This Exists
 
-Local development on macOS gets messy fast: `npm run dev` exits, a server keeps running, port 3000 is busy, Vite silently moves to another port, or AirPlay owns port 5000. MacDev makes those local runtimes visible and actionable from one native menubar surface.
+Local development on macOS gets messy fast: `npm run dev` exits, a server keeps running, port 3000 is busy, Vite silently moves to another port, or AirPlay owns port 5000. MacDev makes those local runtimes visible and actionable from one native macOS surface.
 
 ## Current Workflow
 
@@ -88,6 +109,7 @@ Local development on macOS gets messy fast: `npm run dev` exits, a server keeps 
 | State | Observation (`@Observable`) |
 | Runtime discovery | `lsof`, `ps`, `launchctl` |
 | Project model | Swift Package Manager, Xcode-openable |
+| CI | GitHub Actions on macOS |
 | Tests | Swift Testing via XCTest |
 
 ## Requirements
@@ -108,7 +130,7 @@ The script builds MacDev, stages `dist/MacDev.app`, and launches the app bundle.
 To create a local preview DMG:
 
 ```bash
-MACDEV_VERSION=0.1.0 ./script/package_dmg.sh
+MACDEV_VERSION=0.1.3 ./script/package_dmg.sh
 ```
 
 ## Usage
@@ -122,13 +144,18 @@ MACDEV_VERSION=0.1.0 ./script/package_dmg.sh
 ## Development
 
 ```bash
+swift build
 swift test
 ./script/build_and_run.sh --verify
 ```
 
-The core scanner and parser logic lives in `MacDevCore` so it can be tested without launching the app.
+The scanner, parser, classifier, process-control, and profile logic live in `MacDevCore` so they can be tested without launching the app.
 
-Tagged releases are built by GitHub Actions. Push `v<version>` and the release workflow builds a release-mode app bundle, creates a DMG, verifies the signature and image, then attaches the DMG to the GitHub Release.
+## Release Process
+
+Tagged releases are built by GitHub Actions. The release workflow builds a release-mode app bundle, creates a DMG, verifies the app signature and disk image, uploads an artifact, and attaches the DMG to the GitHub Release.
+
+Release details live in [docs/release.md](docs/release.md). Public release notes are kept in [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
 ## Roadmap
 
@@ -140,6 +167,12 @@ Tagged releases are built by GitHub Actions. Push `v<version>` and the release w
 - Advanced workspace orchestration
 - Exportable team profiles
 
+## Contributing
+
+Issues and focused pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), keep changes scoped, and run `swift test` before opening a PR.
+
+Security reports should follow [SECURITY.md](SECURITY.md).
+
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).

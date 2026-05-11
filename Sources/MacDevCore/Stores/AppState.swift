@@ -76,11 +76,15 @@ public final class AppState {
   }
 
   public var visibleServers: [ListeningServer] {
-    developerServers + (showAppleServices ? appleServiceServers : [])
+    developerServers + backgroundServers + (showAppleServices ? appleServiceServers : [])
   }
 
   public var developerServers: [ListeningServer] {
-    servers.filter { !$0.isAppleService }
+    servers.filter(\.isPrimaryRuntime)
+  }
+
+  public var backgroundServers: [ListeningServer] {
+    servers.filter { !$0.isAppleService && !$0.isPrimaryRuntime }
   }
 
   public var appleServiceServers: [ListeningServer] {

@@ -15,6 +15,20 @@ final class CommandRunnerTests: XCTestCase {
     }
   }
 
+  func testCommandTimeoutEscalatesWhenProcessIgnoresTerminate() async {
+    let runner = ShellCommandRunner(timeout: 0.1)
+    let start = Date()
+
+    do {
+      _ = try await runner.run("/bin/sh", ["-c", "trap '' TERM; sleep 2"])
+      XCTFail("Expected timeout")
+    } catch is CommandTimeout {
+      XCTAssertLessThan(Date().timeIntervalSince(start), 1)
+    } catch {
+      XCTFail("Expected CommandTimeout, got \(error)")
+    }
+  }
+
   func testCommandRunnerDrainsLargeOutput() async throws {
     let runner = ShellCommandRunner(timeout: 2)
 
