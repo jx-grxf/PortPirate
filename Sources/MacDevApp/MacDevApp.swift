@@ -16,8 +16,7 @@ struct MacDevApp: App {
           Text("MacDev")
         }
       } icon: {
-        Image(systemName: statusImage)
-          .symbolRenderingMode(.hierarchical)
+        MenuBarGlyph(state: appState.status)
       }
     }
     .menuBarExtraStyle(.window)
@@ -31,13 +30,26 @@ struct MacDevApp: App {
       SettingsView(appState: appState)
     }
   }
+}
 
-  private var statusImage: String {
-    switch appState.status {
-    case .idle: "server.rack"
-    case .ok: "checkmark.circle"
-    case .warning: "exclamationmark.triangle"
-    case .problem: "xmark.octagon"
+private struct MenuBarGlyph: View {
+  let state: RuntimeState
+
+  var body: some View {
+    ZStack(alignment: .topTrailing) {
+      Image(systemName: "terminal")
+        .font(.system(size: 15, weight: .semibold))
+        .symbolRenderingMode(.monochrome)
+        .foregroundStyle(.primary)
+
+      if state == .warning || state == .problem {
+        Circle()
+          .fill(state == .problem ? .red : .secondary)
+          .frame(width: 5, height: 5)
+          .offset(x: 2, y: -2)
+      }
     }
+    .frame(width: 18, height: 18)
+    .accessibilityLabel("MacDev \(state.title)")
   }
 }

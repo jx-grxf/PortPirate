@@ -36,11 +36,26 @@ public struct ListeningServer: Identifiable, Hashable, Codable, Sendable {
     URL(string: "http://localhost:\(port)")
   }
 
+  public var displayPort: String {
+    String(port)
+  }
+
+  public var displayTitle: String {
+    guard runtime == .unknown else { return runtime.title }
+    return process?.displayName ?? processName
+  }
+
   public var workspaceName: String {
-    guard let currentDirectory = process?.currentDirectory else {
-      return "Unknown workspace"
+    guard
+      let currentDirectory = process?.currentDirectory,
+      !currentDirectory.isEmpty,
+      currentDirectory != "/"
+    else {
+      return process?.displayName ?? processName
     }
-    return URL(fileURLWithPath: currentDirectory).lastPathComponent
+
+    let lastPathComponent = URL(fileURLWithPath: currentDirectory).lastPathComponent
+    return lastPathComponent.isEmpty ? currentDirectory : lastPathComponent
   }
 
   public var commandLine: String {
@@ -54,5 +69,9 @@ public struct ListeningServer: Identifiable, Hashable, Codable, Sendable {
       || command.contains("/usr/libexec/")
       || processName.lowercased().hasPrefix("com.apple.")
       || processName == "ControlCenter"
+  }
+
+  public var isPrimaryRuntime: Bool {
+    runtime.isPrimaryRuntime && !isAppleService
   }
 }

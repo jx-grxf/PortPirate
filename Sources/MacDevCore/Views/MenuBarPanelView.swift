@@ -5,6 +5,7 @@ public struct MenuBarPanelView: View {
   @Environment(\.openWindow) private var openWindow
   @Environment(\.openSettings) private var openSettings
   @State private var isAppleServicesExpanded = false
+  @State private var isBackgroundExpanded = false
 
   public init(appState: AppState) {
     self.appState = appState
@@ -25,6 +26,7 @@ public struct MenuBarPanelView: View {
             }
           }
           serverSection
+          backgroundSection
           appleServicesSection
           profileSection
           launchdSection
@@ -97,6 +99,40 @@ public struct MenuBarPanelView: View {
 
       if let diagnostic = appState.diagnosticResult {
         DiagnosticCard(result: diagnostic)
+      }
+    }
+  }
+
+  @ViewBuilder
+  private var backgroundSection: some View {
+    let backgroundServers = appState.backgroundServers
+
+    if !backgroundServers.isEmpty {
+      VStack(alignment: .leading, spacing: 8) {
+        Button {
+          withAnimation(.snappy(duration: 0.18)) {
+            isBackgroundExpanded.toggle()
+          }
+        } label: {
+          HStack(spacing: 6) {
+            Image(systemName: isBackgroundExpanded ? "chevron.down" : "chevron.right")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .frame(width: 12)
+            SectionHeader(title: "Other listeners", systemImage: "app.connected.to.app.below.fill")
+            Spacer()
+            Text("\(backgroundServers.count)")
+              .font(.caption.monospacedDigit())
+              .foregroundStyle(.secondary)
+          }
+        }
+        .buttonStyle(.plain)
+
+        if isBackgroundExpanded {
+          ForEach(backgroundServers.prefix(6)) { server in
+            ServerRowView(appState: appState, server: server, allowsStop: false)
+          }
+        }
       }
     }
   }
@@ -187,7 +223,7 @@ public struct MenuBarPanelView: View {
   }
 
   private var footer: some View {
-    HStack {
+    HStack(spacing: 10) {
       Button {
         MacDevWindowFocus.activateApp()
         openSettings()
@@ -195,6 +231,9 @@ public struct MenuBarPanelView: View {
       } label: {
         Label("Settings", systemImage: "gearshape")
       }
+      .labelStyle(.iconOnly)
+      .buttonStyle(.borderless)
+      .help("Settings")
 
       Button {
         MacDevWindowFocus.activateApp()
@@ -203,15 +242,25 @@ public struct MenuBarPanelView: View {
       } label: {
         Label("Runtime Browser", systemImage: "sidebar.leading")
       }
+      .labelStyle(.iconOnly)
+      .buttonStyle(.borderless)
+      .help("Runtime Browser")
 
       Spacer()
 
-      Button("Quit") {
+      Button {
         NSApplication.shared.terminate(nil)
+      } label: {
+        Label("Quit", systemImage: "power")
       }
+      .labelStyle(.iconOnly)
       .keyboardShortcut("q")
+      .buttonStyle(.borderless)
+      .help("Quit MacDev")
     }
-    .padding(12)
+    .controlSize(.small)
+    .padding(.horizontal, 14)
+    .padding(.vertical, 10)
   }
 
   private var summaryText: String {
@@ -219,10 +268,12 @@ public struct MenuBarPanelView: View {
       return errorMessage
     }
     let count = appState.developerServers.count
+    let backgroundCount = appState.backgroundServers.count
     let warnings = appState.warningCount
-    if count == 0 { return "No local runtimes detected" }
-    if warnings == 0 { return "\(count) active, no warnings" }
-    return "\(count) active, \(warnings) warning\(warnings == 1 ? "" : "s")"
+    let listenerText = backgroundCount == 0 ? "" : ", \(backgroundCount) other"
+    if count == 0 { return "No dev runtimes\(listenerText)" }
+    if warnings == 0 { return "\(count) active\(listenerText)" }
+    return "\(count) active, \(warnings) warning\(warnings == 1 ? "" : "s")\(listenerText)"
   }
 }
 

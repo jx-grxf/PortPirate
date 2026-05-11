@@ -44,14 +44,15 @@ struct ServerRowView: View {
       Image(systemName: server.runtime.systemImage)
         .foregroundStyle(.secondary)
         .symbolRenderingMode(.hierarchical)
-        .frame(width: 18)
+        .font(.system(size: 17, weight: .medium))
+        .frame(width: 22)
 
       VStack(alignment: .leading, spacing: 2) {
         HStack(spacing: 6) {
-          Text(server.runtime.title)
+          Text(server.displayTitle)
             .font(.callout)
             .bold()
-          Text(":\(server.port)")
+          Text(":\(server.displayPort)")
             .font(.callout.monospacedDigit())
             .foregroundStyle(.secondary)
         }
@@ -63,12 +64,12 @@ struct ServerRowView: View {
 
       Spacer()
 
-      Button("Open localhost:\(server.port)", systemImage: "safari") {
+      Button("Open localhost:\(server.displayPort)", systemImage: "safari") {
         appState.open(server: server)
       }
       .labelStyle(.iconOnly)
       .buttonStyle(.borderless)
-      .help("Open localhost:\(server.port)")
+      .help("Open localhost:\(server.displayPort)")
 
       Button("Diagnose", systemImage: "stethoscope") {
         appState.diagnose(server: server)
@@ -87,7 +88,7 @@ struct ServerRowView: View {
       }
     }
     .padding(10)
-    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
+    .background(.quaternary.opacity(0.28), in: RoundedRectangle(cornerRadius: 8))
     .contextMenu {
       Button("Diagnose") { appState.diagnose(server: server) }
       Button("Open URL") { appState.open(server: server) }

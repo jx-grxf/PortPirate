@@ -14,7 +14,7 @@ public struct RuntimeBrowserView: View {
           ForEach(appState.visibleServers) { server in
             Label {
               VStack(alignment: .leading, spacing: 2) {
-                Text("\(server.runtime.title) :\(server.port)")
+                Text("\(server.displayTitle) :\(server.displayPort)")
                   .lineLimit(1)
                 Text(server.workspaceName)
                   .font(.caption)
@@ -73,7 +73,7 @@ struct ServerInspectorView: View {
             .font(.title2)
             .symbolRenderingMode(.hierarchical)
           VStack(alignment: .leading, spacing: 2) {
-            Text("\(server.runtime.title) on port \(server.port)")
+            Text("\(server.displayTitle) on port \(server.displayPort)")
               .font(.title2)
               .bold()
             Text(server.workspaceName)
@@ -130,7 +130,7 @@ struct ServerInspectorView: View {
         }
 
         InspectorSection(title: "Network", systemImage: "network") {
-          LabeledContent("URL", value: "http://localhost:\(server.port)")
+          LabeledContent("URL", value: "http://localhost:\(server.displayPort)")
           LabeledContent("Addresses", value: server.addresses.joined(separator: ", "))
         }
 

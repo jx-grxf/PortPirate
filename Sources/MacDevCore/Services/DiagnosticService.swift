@@ -75,7 +75,7 @@ public enum DiagnosticService {
     default:
       return DiagnosticResult(
         port: port,
-        title: "\(server.runtime.title) owns port \(port)",
+        title: "\(server.displayTitle) owns port \(port)",
         cause: "PID \(server.processID) is listening on \(server.addresses.joined(separator: ", ")).",
         recommendedAction: "Verify the command and workspace before stopping the process.",
         server: server,

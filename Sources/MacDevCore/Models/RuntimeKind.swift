@@ -11,6 +11,7 @@ public enum RuntimeKind: String, Codable, CaseIterable, Sendable {
   case nuxt
   case docker
   case brew
+  case openClaw
   case airPlay
   case launchd
   case node
@@ -28,6 +29,7 @@ public enum RuntimeKind: String, Codable, CaseIterable, Sendable {
     case .nuxt: "Nuxt"
     case .docker: "Docker"
     case .brew: "Homebrew"
+    case .openClaw: "OpenClaw"
     case .airPlay: "AirPlay"
     case .launchd: "launchd"
     case .node: "Node"
@@ -43,9 +45,19 @@ public enum RuntimeKind: String, Codable, CaseIterable, Sendable {
     case .astro, .nuxt: "sparkles"
     case .docker: "shippingbox"
     case .brew: "mug"
+    case .openClaw: "point.3.connected.trianglepath.dotted"
     case .airPlay: "airplayvideo"
     case .launchd: "gearshape.2"
     case .unknown: "questionmark.circle"
+    }
+  }
+
+  public var isPrimaryRuntime: Bool {
+    switch self {
+    case .npm, .pnpm, .yarn, .bun, .vite, .next, .astro, .nuxt, .docker, .brew, .openClaw, .node:
+      true
+    case .airPlay, .launchd, .unknown:
+      false
     }
   }
 }
