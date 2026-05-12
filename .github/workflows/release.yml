@@ -84,3 +84,15 @@ jobs:
               --title "MacDev ${RELEASE_VERSION}" \
               --notes-file RELEASE_NOTES.md
           fi
+
+      - name: Trigger website rebuild
+        env:
+          WEBSITE_DEPLOY_HOOK_URL: ${{ secrets.WEBSITE_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$WEBSITE_DEPLOY_HOOK_URL" ]; then
+            echo "WEBSITE_DEPLOY_HOOK_URL secret is missing."
+            exit 1
+          fi
+
+          curl --fail --silent --show-error --request POST "$WEBSITE_DEPLOY_HOOK_URL"
