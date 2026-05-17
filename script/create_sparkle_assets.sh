@@ -12,6 +12,10 @@ ZIP_PATH="$ARCHIVES_DIR/$APP_NAME-$VERSION.zip"
 RELEASE_NOTES_PATH="$ARCHIVES_DIR/$APP_NAME-$VERSION.md"
 GENERATE_APPCAST="$ROOT_DIR/.build/artifacts/sparkle/Sparkle/bin/generate_appcast"
 DOWNLOAD_PREFIX="${MACDEV_SPARKLE_DOWNLOAD_PREFIX:-https://github.com/jx-grxf/MacDev/releases/download/v$VERSION}"
+if [[ "$DOWNLOAD_PREFIX" != */ ]]; then
+  DOWNLOAD_PREFIX="$DOWNLOAD_PREFIX/"
+fi
+EXPECTED_DOWNLOAD_URL="${DOWNLOAD_PREFIX}$APP_NAME-$VERSION.zip"
 
 if [[ ! -x "$GENERATE_APPCAST" ]]; then
   echo "Sparkle generate_appcast tool is missing. Run: swift package resolve" >&2
@@ -43,6 +47,11 @@ fi
 
 printf '%s' "$MACDEV_SPARKLE_PRIVATE_KEY" |
   "$GENERATE_APPCAST" --ed-key-file - "${appcast_args[@]}" "$ARCHIVES_DIR"
+
+if ! grep -Fq "$EXPECTED_DOWNLOAD_URL" "$ARCHIVES_DIR/appcast.xml"; then
+  echo "appcast.xml does not contain expected Sparkle enclosure URL: $EXPECTED_DOWNLOAD_URL" >&2
+  exit 1
+fi
 
 echo "$ZIP_PATH"
 echo "$ARCHIVES_DIR/appcast.xml"
