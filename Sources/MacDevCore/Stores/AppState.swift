@@ -163,8 +163,11 @@ public final class AppState {
   }
 
   public func diagnosePortText() {
-    guard let port = Int(diagnosisPortText.trimmingCharacters(in: .whitespacesAndNewlines)) else {
-      errorMessage = "Enter a valid port number."
+    guard
+      let port = Int(diagnosisPortText.trimmingCharacters(in: .whitespacesAndNewlines)),
+      (1...65535).contains(port)
+    else {
+      errorMessage = "Enter a valid port from 1 to 65535."
       return
     }
     diagnosticResult = DiagnosticService.diagnose(port: port, servers: servers)
@@ -177,12 +180,13 @@ public final class AppState {
 
   public func stop(server: ListeningServer, force: Bool) async {
     do {
+      let currentServer = try await validatedStopTarget(for: server)
       let result = try processController.stop(processID: server.processID, force: force)
       try? await Task.sleep(for: .milliseconds(350))
       await refresh()
       if result == .alreadyStopped {
         errorMessage = nil
-      } else if ProcessStatus.isRunning(server.processID) {
+      } else if ProcessStatus.isRunning(currentServer.processID) {
         errorMessage = force
           ? "PID \(server.processID) is still running after Force Kill."
           : "PID \(server.processID) did not exit. Use Force Kill from the row menu."
@@ -191,6 +195,41 @@ public final class AppState {
       errorMessage = error.localizedDescription
       await refresh()
     }
+  }
+
+  private func validatedStopTarget(for server: ListeningServer) async throws -> ListeningServer {
+    guard server.isPrimaryRuntime else {
+      throw ProcessControllerError.unsafeProcess(server.processID, "only local developer runtimes can be stopped")
+    }
+
+    if let user = server.process?.user, user != NSUserName() {
+      throw ProcessControllerError.unsafeProcess(server.processID, "process is owned by \(user)")
+    }
+
+    let snapshot = try await discoveryService.scan(includeLaunchAgents: false)
+    guard let currentServer = snapshot.servers.first(where: {
+      $0.processID == server.processID && $0.port == server.port
+    }) else {
+      throw ProcessControllerError.unsafeProcess(server.processID, "the process is no longer listening on port \(server.port)")
+    }
+
+    guard currentServer.isPrimaryRuntime else {
+      throw ProcessControllerError.unsafeProcess(server.processID, "the current listener is not a developer runtime")
+    }
+
+    if let originalCommand = server.process?.command,
+       let currentCommand = currentServer.process?.command,
+       originalCommand != currentCommand {
+      throw ProcessControllerError.unsafeProcess(server.processID, "process command changed since the last scan")
+    }
+
+    if let originalDirectory = server.process?.currentDirectory,
+       let currentDirectory = currentServer.process?.currentDirectory,
+       originalDirectory != currentDirectory {
+      throw ProcessControllerError.unsafeProcess(server.processID, "working directory changed since the last scan")
+    }
+
+    return currentServer
   }
 
   public func startScript(_ script: PackageScript, in profile: WorkspaceProfile) {

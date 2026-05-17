@@ -9,6 +9,7 @@ public enum ProcessStopResult: Equatable, Sendable {
 public enum ProcessControllerError: Error, LocalizedError {
   case permissionDenied(Int32)
   case failedToStop(Int32, Int32)
+  case unsafeProcess(Int32, String)
 
   public var errorDescription: String? {
     switch self {
@@ -16,6 +17,8 @@ public enum ProcessControllerError: Error, LocalizedError {
       "macOS denied permission to stop PID \(pid)."
     case .failedToStop(let pid, let code):
       "Could not stop PID \(pid). errno \(code)."
+    case .unsafeProcess(let pid, let reason):
+      "MacDev refused to stop PID \(pid): \(reason)"
     }
   }
 }
@@ -95,8 +98,23 @@ enum ProcessControllerEnvironment {
     "/sbin"
   ]
 
+  private static let allowedExactKeys: Set<String> = [
+    "HOME",
+    "LANG",
+    "LOGNAME",
+    "SHELL",
+    "TMPDIR",
+    "TERM",
+    "USER",
+    "XDG_CONFIG_HOME",
+    "XDG_DATA_HOME",
+    "XDG_STATE_HOME"
+  ]
+
   static func scriptEnvironment(base: [String: String] = ProcessInfo.processInfo.environment) -> [String: String] {
-    var environment = base
+    var environment = base.filter { key, _ in
+      allowedExactKeys.contains(key) || key.hasPrefix("LC_")
+    }
     let existingPaths = (base["PATH"] ?? "")
       .split(separator: ":", omittingEmptySubsequences: true)
       .map(String.init)
