@@ -157,7 +157,7 @@ The script builds MacDev, stages `dist/MacDev.app`, and launches the app bundle.
 To create a local preview DMG:
 
 ```bash
-MACDEV_VERSION=0.1.4 ./script/package_dmg.sh
+MACDEV_VERSION=0.2.0 ./script/package_dmg.sh
 ```
 
 ## Usage
