@@ -6,6 +6,7 @@ public struct MenuBarPanelView: View {
   @Environment(\.openSettings) private var openSettings
   @State private var isAppleServicesExpanded = false
   @State private var isBackgroundExpanded = false
+  @State private var isToolsExpanded = false
 
   public init(appState: AppState) {
     self.appState = appState
@@ -28,9 +29,7 @@ public struct MenuBarPanelView: View {
           serverSection
           backgroundSection
           appleServicesSection
-          profileSection
-          launchdSection
-          logsSection
+          toolsSection
         }
         .padding(14)
       }
@@ -42,6 +41,7 @@ public struct MenuBarPanelView: View {
     .background(.regularMaterial)
     .task {
       await appState.bootstrap()
+      await appState.refreshNotificationAuthorization()
     }
   }
 
@@ -130,6 +130,8 @@ public struct MenuBarPanelView: View {
           }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Other listeners")
+        .accessibilityValue(isBackgroundExpanded ? "Expanded" : "Collapsed")
 
         if isBackgroundExpanded {
           ForEach(backgroundServers.prefix(6)) { server in
@@ -164,6 +166,8 @@ public struct MenuBarPanelView: View {
           }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Apple services")
+        .accessibilityValue(isAppleServicesExpanded ? "Expanded" : "Collapsed")
 
         if appState.showAppleServices {
           if isAppleServicesExpanded {
@@ -177,6 +181,34 @@ public struct MenuBarPanelView: View {
             subtitle: "Enable them in Settings if you want system listeners in the menu."
           )
         }
+      }
+    }
+  }
+
+  private var toolsSection: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Button {
+        withAnimation(.snappy(duration: 0.18)) {
+          isToolsExpanded.toggle()
+        }
+      } label: {
+        HStack(spacing: 6) {
+          Image(systemName: isToolsExpanded ? "chevron.down" : "chevron.right")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .frame(width: 12)
+          SectionHeader(title: "Tools", systemImage: "wrench.and.screwdriver")
+          Spacer()
+        }
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel("Tools")
+      .accessibilityValue(isToolsExpanded ? "Expanded" : "Collapsed")
+
+      if isToolsExpanded {
+        profileSection
+        launchdSection
+        logsSection
       }
     }
   }

@@ -14,6 +14,7 @@ public final class AppState {
   public var diagnosisPortText = ""
   public var isRefreshing = false
   public var errorMessage: String?
+  public var notificationAuthorization: MacDevNotificationAuthorization = .unknown
 
   public var refreshInterval: Double {
     didSet { UserDefaults.standard.set(refreshInterval, forKey: Defaults.refreshInterval) }
@@ -40,24 +41,43 @@ public final class AppState {
     }
   }
 
+  public var notificationSettings: NotificationSettings {
+    didSet {
+      if let data = try? JSONEncoder().encode(notificationSettings) {
+        UserDefaults.standard.set(data, forKey: Defaults.notificationSettings)
+      }
+    }
+  }
+
   private let discoveryService: DiscoveryService
   private let profileStore: ProfileStore
+  private let notificationService: NotificationService
   private let processController = ProcessController()
   private var refreshTask: Task<Void, Never>?
   private var startedProcesses: [UUID: Process] = [:]
+  private var notifiedWarningIDs = Set<String>()
+  private var notifiedMissingPortIDs = Set<String>()
   private var hasBootstrapped = false
 
   public init(
     discoveryService: DiscoveryService = DiscoveryService(),
-    profileStore: ProfileStore = ProfileStore()
+    profileStore: ProfileStore = ProfileStore(),
+    notificationService: NotificationService = NotificationService()
   ) {
     self.discoveryService = discoveryService
     self.profileStore = profileStore
+    self.notificationService = notificationService
     self.refreshInterval = UserDefaults.standard.object(forKey: Defaults.refreshInterval) as? Double ?? 8
     self.includeLaunchAgents = UserDefaults.standard.object(forKey: Defaults.includeLaunchAgents) as? Bool ?? true
     self.showStatusCount = UserDefaults.standard.object(forKey: Defaults.showStatusCount) as? Bool ?? true
     self.confirmForceKill = UserDefaults.standard.object(forKey: Defaults.confirmForceKill) as? Bool ?? true
     self.showAppleServices = UserDefaults.standard.object(forKey: Defaults.showAppleServices) as? Bool ?? false
+    if let data = UserDefaults.standard.data(forKey: Defaults.notificationSettings),
+       let settings = try? JSONDecoder().decode(NotificationSettings.self, from: data) {
+      self.notificationSettings = settings
+    } else {
+      self.notificationSettings = NotificationSettings()
+    }
   }
 
   public var status: RuntimeState {
@@ -98,6 +118,7 @@ public final class AppState {
   public func bootstrap() async {
     guard !hasBootstrapped else { return }
     hasBootstrapped = true
+    await refreshNotificationAuthorization()
     await loadProfiles()
     await refresh()
     startAutoRefresh(immediately: false)
@@ -131,8 +152,34 @@ public final class AppState {
         selectedServerID = visibleServers.first?.id
       }
       errorMessage = nil
+      await sendStateNotifications()
     } catch {
       errorMessage = error.localizedDescription
+      if notificationSettings.scanFailureEnabled {
+        try? await notificationService.notifyScanFailure(error.localizedDescription)
+      }
+    }
+  }
+
+  public func refreshNotificationAuthorization() async {
+    notificationAuthorization = await notificationService.authorizationStatus()
+  }
+
+  public func requestNotifications() async {
+    do {
+      _ = try await notificationService.requestAuthorization()
+      await refreshNotificationAuthorization()
+    } catch {
+      errorMessage = "Could not request notifications: \(error.localizedDescription)"
+    }
+  }
+
+  public func sendTestNotification() async {
+    do {
+      try await notificationService.sendTestNotification()
+      await refreshNotificationAuthorization()
+    } catch {
+      errorMessage = "Could not send test notification: \(error.localizedDescription)"
     }
   }
 
@@ -294,6 +341,33 @@ public final class AppState {
     guard runningScripts[index].isRunning else { return }
     runningScripts[index].isRunning = false
     appendLog("Exited with status \(status)", to: runningID)
+    if status != 0, notificationSettings.managedProcessCrashEnabled {
+      let script = runningScripts[index]
+      Task {
+        try? await notificationService.notifyManagedProcessExited(script, status: status)
+      }
+    }
+  }
+
+  private func sendStateNotifications() async {
+    if notificationSettings.portCollisionsEnabled {
+      for server in visibleServers where server.warning != nil {
+        let id = "\(server.processID):\(server.port):\(server.warning ?? "")"
+        guard notifiedWarningIDs.insert(id).inserted else { continue }
+        try? await notificationService.notifyPortCollision(server: server)
+      }
+    }
+
+    if notificationSettings.expectedPortMissingEnabled {
+      let activePorts = Set(visibleServers.map(\.port))
+      for profile in profiles {
+        for port in profile.expectedPorts where !activePorts.contains(port) {
+          let id = "\(profile.id):\(port)"
+          guard notifiedMissingPortIDs.insert(id).inserted else { continue }
+          try? await notificationService.notifyExpectedPortMissing(profile: profile, port: port)
+        }
+      }
+    }
   }
 }
 
@@ -303,4 +377,5 @@ private enum Defaults {
   static let showStatusCount = "showStatusCount"
   static let confirmForceKill = "confirmForceKill"
   static let showAppleServices = "showAppleServices"
+  static let notificationSettings = "notificationSettings"
 }
