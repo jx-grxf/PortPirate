@@ -39,4 +39,9 @@ Preview build of MacDev, a native macOS menu bar utility for finding and fixing 
 
 - Preview build is unsigned and not notarized.
 - DMG is for preview distribution only.
-- Notifications and full workspace orchestration are planned but not complete.
+- Sparkle appcast signing requires release secrets and is only active in packaged release builds.
+
+## Pull Requests
+
+- [#2](https://github.com/jx-grxf/MacDev/pull/2) Public deep-dive polish.
+- [#3](https://github.com/jx-grxf/MacDev/pull/3) Website release refresh hook.
