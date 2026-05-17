@@ -121,6 +121,26 @@ jobs:
               $RELEASE_PRERELEASE
           fi
 
+      - name: Publish beta appcast feed
+        if: steps.version.outputs.channel == 'beta'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          beta_tag="beta"
+          appcast="dist/sparkle/appcast.xml"
+          if gh release view "$beta_tag" >/dev/null 2>&1; then
+            gh release edit "$beta_tag" --target "$GITHUB_SHA" --prerelease --title "MacDev Beta Feed"
+            gh release upload "$beta_tag" "$appcast#appcast.xml" --clobber
+          else
+            gh release create "$beta_tag" \
+              "$appcast#appcast.xml" \
+              --target "$GITHUB_SHA" \
+              --title "MacDev Beta Feed" \
+              --notes "Moving Sparkle beta appcast feed. Install beta builds from versioned prereleases." \
+              --prerelease
+          fi
+
       - name: Trigger website rebuild
         env:
           WEBSITE_DEPLOY_HOOK_URL: ${{ secrets.WEBSITE_DEPLOY_HOOK_URL }}
