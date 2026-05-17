@@ -1,17 +1,17 @@
-# MacDev 0.1.4 Preview
+# MacDev 0.2.0 Preview
 
-Preview build of MacDev, a native macOS menu bar utility for finding and fixing local developer runtimes.
+Preview build of MacDev, a native macOS menu bar utility for finding, diagnosing, and safely controlling local developer runtimes.
 
 ## Highlights
 
 - Detects listening TCP ports and maps them to processes, commands, users, and working directories.
 - Classifies common local runtimes such as Vite, Next.js, Astro, npm, pnpm, yarn, Bun, Docker, Homebrew, and AirPlay-like system ports.
-- Adds a more scannable Runtime Browser with search, clearer empty states, and visible refresh state.
-- Adds a rounded GitHub and portfolio showcase screenshot for the real menu bar panel.
+- Refreshes the app icon from the new `.icon` source across the app bundle, README, and website asset.
+- Adds native notification controls for port warnings, managed-process crashes, expected missing ports, and scan failures.
+- Adds Sparkle update settings with stable and beta channel selection backed by GitHub Release appcasts.
 - Opens localhost URLs and stops exact PIDs instead of using broad commands like `killall node`.
-- Separates Apple/system services from local developer runtimes.
-- Adds workspace profiles from `package.json` scripts.
-- Ships as a native SwiftUI macOS app with no telemetry or backend service.
+- Separates Apple/system services from local developer runtimes before showing destructive actions.
+- Keeps the README top product-focused while making install, first launch, and trust-model sections clearer for normal users.
 
 ## Fixed
 
@@ -23,20 +23,25 @@ Preview build of MacDev, a native macOS menu bar utility for finding and fixing 
 - Rebuilt the release DMG with `create-dmg` so Finder opens a polished installer window instead of a raw one-item disk image.
 - Made the DMG script compatible with both local and GitHub Actions `create-dmg` CLIs.
 - Fixed stale process stops so already-exited PIDs refresh cleanly instead of showing a hard failure.
-- Fixed Settings and Runtime Browser focus from a no-Dock menu bar app.
-- Fixed launchd parsing for real `launchctl print gui/$UID` service table output.
-- Improved scanner responsiveness with command timeouts and batched CWD lookup.
+- Revalidates PID, port, command, owner, and working directory before sending a stop signal.
+- Blocks backend stop actions for non-primary runtimes such as Apple, system-looking, Docker, or Homebrew services.
+- Limits port diagnosis to the valid `1...65535` range.
+- Filters workspace script environments so common secret variables are not passed through by default.
+- Embeds the Sparkle framework RPATH so packaged apps can load bundled update support correctly.
 
 ## Improved
 
-- Added GitHub issue forms, PR template, Dependabot, SECURITY, CONTRIBUTING, and a public audit note.
-- Hardened GitHub Actions with job permissions, concurrency, and timeouts.
-- Added linked CI/release badges and GitHub Markdown alert blocks in the README.
-- Improved long command/path display in the runtime inspector.
-- Made the menu bar warning indicator visibly yellow.
+- Reworked Settings into macOS-style preference tabs: General, Discovery, Actions, Notifications, Updates, and About.
+- Reduced the menu bar panel toward quick status, diagnosis, and runtime actions.
+- Added release workflow assets for DMG, Sparkle ZIP, signed appcast, and website rebuild triggering.
+- Clarified package-script trust copy and separated user install flow from developer build flow.
 
 ## Known Limitations
 
-- Preview build is unsigned and not notarized.
-- DMG is for preview distribution only.
-- Notifications and full workspace orchestration are planned but not complete.
+- Preview build is ad-hoc signed but not Developer ID notarized.
+- Gatekeeper may require right-click Open until notarized releases ship.
+- Sparkle appcast signing requires release secrets and is only active in packaged release builds.
+
+## Pull Requests
+
+- [#4](https://github.com/jx-grxf/MacDev/pull/4) MacDev polish, notifications, Sparkle, trust copy, and security hardening.

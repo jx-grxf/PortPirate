@@ -18,6 +18,9 @@ struct MacDevApp: App {
       } icon: {
         MenuBarGlyph(state: appState.status)
       }
+      .task {
+        await appState.bootstrap()
+      }
     }
     .menuBarExtraStyle(.window)
 
@@ -25,9 +28,47 @@ struct MacDevApp: App {
       RuntimeBrowserView(appState: appState)
     }
     .defaultSize(width: 860, height: 560)
+    .commands {
+      MacDevCommands(appState: appState)
+    }
 
     Settings {
       SettingsView(appState: appState)
+    }
+  }
+}
+
+private struct MacDevCommands: Commands {
+  let appState: AppState
+  @Environment(\.openWindow) private var openWindow
+
+  var body: some Commands {
+    CommandMenu("MacDev") {
+      Button("Refresh") {
+        Task { await appState.refresh() }
+      }
+      .keyboardShortcut("r")
+
+      Button("Runtime Browser") {
+        MacDevWindowFocus.activateApp()
+        openWindow(id: "runtime-browser")
+        MacDevWindowFocus.bringWindowForward(title: "Runtime Browser")
+      }
+      .keyboardShortcut("b")
+
+      Divider()
+
+      if let server = appState.selectedServer {
+        Button("Open Selected Runtime") {
+          appState.open(server: server)
+        }
+        .keyboardShortcut("o")
+
+        Button("Diagnose Selected Runtime") {
+          appState.diagnose(server: server)
+        }
+        .keyboardShortcut("d")
+      }
     }
   }
 }

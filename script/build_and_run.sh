@@ -15,9 +15,12 @@ APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
 APP_CONTENTS="$APP_BUNDLE/Contents"
 APP_MACOS="$APP_CONTENTS/MacOS"
 APP_RESOURCES="$APP_CONTENTS/Resources"
+APP_FRAMEWORKS="$APP_CONTENTS/Frameworks"
 APP_BINARY="$APP_MACOS/$APP_NAME"
 INFO_PLIST="$APP_CONTENTS/Info.plist"
 APP_ICON="$ROOT_DIR/Assets/AppIcon/AppIcon.icns"
+SPARKLE_PUBLIC_KEY="${MACDEV_SPARKLE_PUBLIC_KEY:-development-placeholder}"
+SPARKLE_FEED_URL="${MACDEV_SPARKLE_FEED_URL:-https://github.com/jx-grxf/MacDev/releases/latest/download/appcast.xml}"
 
 pkill -x "$APP_NAME" >/dev/null 2>&1 || true
 
@@ -26,12 +29,18 @@ swift build -c "$CONFIGURATION"
 BUILD_BINARY="$(swift build -c "$CONFIGURATION" --show-bin-path)/$APP_NAME"
 
 rm -rf "$APP_BUNDLE"
-mkdir -p "$APP_MACOS" "$APP_RESOURCES"
+mkdir -p "$APP_MACOS" "$APP_RESOURCES" "$APP_FRAMEWORKS"
 cp "$BUILD_BINARY" "$APP_BINARY"
 chmod +x "$APP_BINARY"
+install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP_BINARY" 2>/dev/null || true
 
 if [[ -f "$APP_ICON" ]]; then
   cp "$APP_ICON" "$APP_RESOURCES/AppIcon.icns"
+fi
+
+SPARKLE_FRAMEWORK="$(find "$ROOT_DIR/.build/artifacts" -path '*/Sparkle.framework' -type d | head -n 1 || true)"
+if [[ -n "$SPARKLE_FRAMEWORK" ]]; then
+  cp -R "$SPARKLE_FRAMEWORK" "$APP_FRAMEWORKS/"
 fi
 
 cat >"$INFO_PLIST" <<PLIST
@@ -63,11 +72,24 @@ cat >"$INFO_PLIST" <<PLIST
   <true/>
   <key>NSPrincipalClass</key>
   <string>NSApplication</string>
+  <key>SUAllowsAutomaticUpdates</key>
+  <true/>
+  <key>SUEnableAutomaticChecks</key>
+  <true/>
+  <key>SUFeedURL</key>
+  <string>$SPARKLE_FEED_URL</string>
+  <key>SUPublicEDKey</key>
+  <string>$SPARKLE_PUBLIC_KEY</string>
+  <key>SUScheduledCheckInterval</key>
+  <integer>86400</integer>
 </dict>
 </plist>
 PLIST
 
 if command -v codesign >/dev/null 2>&1; then
+  if [[ -d "$APP_FRAMEWORKS/Sparkle.framework" ]]; then
+    codesign --force --sign "$SIGN_IDENTITY" "$APP_FRAMEWORKS/Sparkle.framework"
+  fi
   codesign --force --deep --sign "$SIGN_IDENTITY" "$APP_BUNDLE"
 fi
 

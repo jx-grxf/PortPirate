@@ -222,16 +222,18 @@ struct ServerInspectorView: View {
             Label("Diagnose", systemImage: "stethoscope")
           }
 
-          Button {
-            Task { await appState.stop(server: server, force: false) }
-          } label: {
-            Label("Stop", systemImage: "stop.circle")
-          }
+          if server.isPrimaryRuntime {
+            Button {
+              Task { await appState.stop(server: server, force: false) }
+            } label: {
+              Label("Stop", systemImage: "stop.circle")
+            }
 
-          Button(role: .destructive) {
-            requestForceKill()
-          } label: {
-            Label("Force Kill", systemImage: "xmark.octagon")
+            Button(role: .destructive) {
+              requestForceKill()
+            } label: {
+              Label("Force Kill", systemImage: "xmark.octagon")
+            }
           }
         }
 

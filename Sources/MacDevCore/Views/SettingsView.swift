@@ -3,41 +3,71 @@ import SwiftUI
 
 public struct SettingsView: View {
   @Bindable private var appState: AppState
-  @State private var selectedPane: SettingsPane = .general
+  @SceneStorage("settings.selectedPane") private var selectedPaneRaw = SettingsPane.general.rawValue
 
   public init(appState: AppState) {
     self.appState = appState
   }
 
   public var body: some View {
-    NavigationSplitView {
-      List(SettingsPane.allCases, selection: $selectedPane) { pane in
-        Label(pane.title, systemImage: pane.systemImage)
-          .tag(pane)
-      }
-      .listStyle(.sidebar)
-      .navigationTitle("MacDev")
-      .navigationSplitViewColumnWidth(min: 180, ideal: 190, max: 220)
-    } detail: {
+    VStack(spacing: 0) {
+      settingsToolbar
+      Divider()
+
       ScrollView {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 22) {
           Text(selectedPane.title)
-            .font(.title2)
+            .font(.title)
             .bold()
 
           selectedPaneContent
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(24)
+        .padding(.horizontal, 46)
+        .padding(.vertical, 32)
       }
       .scrollContentBackground(.visible)
     }
-    .navigationSplitViewStyle(.balanced)
-    .frame(width: 680, height: 420)
+    .frame(width: 760, height: 560)
     .background(.regularMaterial)
     .task {
       await appState.loadProfiles()
+      await appState.refreshNotificationAuthorization()
     }
+  }
+
+  private var selectedPane: SettingsPane {
+    SettingsPane(rawValue: selectedPaneRaw) ?? .general
+  }
+
+  private var settingsToolbar: some View {
+    HStack(spacing: 14) {
+      ForEach(SettingsPane.allCases) { pane in
+        Button {
+          selectedPaneRaw = pane.rawValue
+        } label: {
+          VStack(spacing: 6) {
+            Image(systemName: pane.systemImage)
+              .font(.title2)
+              .symbolRenderingMode(.hierarchical)
+            Text(pane.title)
+              .font(.caption)
+          }
+          .frame(width: 78, height: 62)
+          .contentShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(selectedPane == pane ? Color.accentColor : Color.secondary)
+        .background(
+          selectedPane == pane ? Color.accentColor.opacity(0.14) : Color.clear,
+          in: RoundedRectangle(cornerRadius: 10)
+        )
+        .accessibilityLabel(pane.title)
+      }
+    }
+    .padding(.horizontal, 28)
+    .padding(.vertical, 14)
+    .frame(maxWidth: .infinity)
   }
 
   @ViewBuilder
@@ -51,6 +81,10 @@ public struct SettingsView: View {
       actionsTab
     case .notifications:
       notificationsTab
+    case .updates:
+      updatesTab
+    case .about:
+      aboutTab
     }
   }
 
@@ -121,13 +155,89 @@ public struct SettingsView: View {
   }
 
   private var notificationsTab: some View {
-    SettingsSection("Planned notifications") {
-      SettingsRoadmapRow(title: "Port collision notifications", systemImage: "exclamationmark.triangle")
-      SettingsRoadmapRow(title: "Managed process crash notifications", systemImage: "waveform.path.ecg")
-      SettingsRoadmapRow(title: "Expected port missing notifications", systemImage: "bell.badge")
-      Text("Notifications are planned after the local scanner and workspace flow are stable.")
+    VStack(alignment: .leading, spacing: 18) {
+      SettingsSection("Permission") {
+        LabeledContent("Status", value: appState.notificationAuthorization.title)
+        HStack {
+          Button {
+            Task { await appState.requestNotifications() }
+          } label: {
+            Label("Enable Notifications", systemImage: "bell.badge")
+          }
+          Button {
+            Task { await appState.sendTestNotification() }
+          } label: {
+            Label("Send Test", systemImage: "paperplane")
+          }
+        }
+      }
+
+      SettingsSection("Notify me when") {
+        Toggle("A port collision or system warning appears", isOn: notificationBinding(\.portCollisionsEnabled))
+        Toggle("A MacDev-managed process exits with an error", isOn: notificationBinding(\.managedProcessCrashEnabled))
+        Toggle("An expected workspace port is missing", isOn: notificationBinding(\.expectedPortMissingEnabled))
+        Toggle("A runtime scan fails", isOn: notificationBinding(\.scanFailureEnabled))
+      }
+    }
+  }
+
+  private var updatesTab: some View {
+    SettingsSection("Updates") {
+      Toggle("Check for updates automatically", isOn: $appState.automaticallyChecksForUpdates)
+      Picker("Update channel", selection: $appState.updateChannel) {
+        ForEach(UpdateChannel.allCases) { channel in
+          Text(channel.title).tag(channel)
+        }
+      }
+      .pickerStyle(.menu)
+      Button("Check for Updates...", systemImage: "arrow.down.circle") {
+        appState.checkForUpdates()
+      }
+      .disabled(!appState.updatesConfigured)
+      Text("Sparkle-backed updates are wired in this release branch. Stable receives normal GitHub releases; Beta also receives prereleases.")
         .font(.caption)
         .foregroundStyle(.secondary)
+      if !appState.updatesConfigured {
+        Text("Update checks are disabled in local builds until MACDEV_SPARKLE_PUBLIC_KEY is provided during packaging.")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+    }
+  }
+
+  private var aboutTab: some View {
+    VStack(alignment: .center, spacing: 16) {
+      Image(nsImage: NSImage(named: "AppIcon") ?? NSImage())
+        .resizable()
+        .frame(width: 112, height: 112)
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+
+      VStack(spacing: 4) {
+        Text("MacDev")
+          .font(.title2)
+          .bold()
+        Text("Native macOS menu bar control center for local developer runtimes.")
+          .font(.callout)
+          .foregroundStyle(.secondary)
+          .multilineTextAlignment(.center)
+      }
+
+      HStack(spacing: 18) {
+        Link("GitHub", destination: URL(string: "https://github.com/jx-grxf/MacDev")!)
+        Link("Website", destination: URL(string: "https://johannesgrof.me/projects/macdev")!)
+        Link("Releases", destination: URL(string: "https://github.com/jx-grxf/MacDev/releases")!)
+      }
+    }
+    .frame(maxWidth: .infinity)
+  }
+
+  private func notificationBinding(_ keyPath: WritableKeyPath<NotificationSettings, Bool>) -> Binding<Bool> {
+    Binding {
+      appState.notificationSettings[keyPath: keyPath]
+    } set: { value in
+      var settings = appState.notificationSettings
+      settings[keyPath: keyPath] = value
+      appState.notificationSettings = settings
     }
   }
 
@@ -149,6 +259,8 @@ private enum SettingsPane: String, CaseIterable, Identifiable {
   case discovery
   case actions
   case notifications
+  case updates
+  case about
 
   var id: String { rawValue }
 
@@ -158,6 +270,8 @@ private enum SettingsPane: String, CaseIterable, Identifiable {
     case .discovery: "Discovery"
     case .actions: "Actions"
     case .notifications: "Notifications"
+    case .updates: "Updates"
+    case .about: "About"
     }
   }
 
@@ -167,6 +281,8 @@ private enum SettingsPane: String, CaseIterable, Identifiable {
     case .discovery: "dot.radiowaves.left.and.right"
     case .actions: "hand.raised"
     case .notifications: "bell"
+    case .updates: "arrow.down.circle"
+    case .about: "info.circle"
     }
   }
 }
@@ -228,26 +344,5 @@ private struct WorkspaceProfileSettingsRow: View {
     }
     .padding(10)
     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
-  }
-}
-
-private struct SettingsRoadmapRow: View {
-  let title: String
-  let systemImage: String
-
-  var body: some View {
-    HStack(spacing: 10) {
-      Image(systemName: systemImage)
-        .foregroundStyle(.secondary)
-        .frame(width: 18)
-      Text(title)
-      Spacer()
-      Text("Later")
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3)
-        .background(.quaternary, in: Capsule())
-    }
   }
 }
