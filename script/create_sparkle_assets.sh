@@ -2,7 +2,7 @@
 set -euo pipefail
 
 APP_NAME="MacDev"
-VERSION="${MACDEV_VERSION:-0.1.0}"
+VERSION="${MACDEV_VERSION:-0.2.0}"
 CHANNEL="${MACDEV_UPDATE_CHANNEL:-stable}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
