@@ -49,9 +49,21 @@ public final class AppState {
     }
   }
 
+  public var updateChannel: UpdateChannel {
+    didSet { UserDefaults.standard.set(updateChannel.rawValue, forKey: Defaults.updateChannel) }
+  }
+
+  public var automaticallyChecksForUpdates: Bool {
+    didSet {
+      UserDefaults.standard.set(automaticallyChecksForUpdates, forKey: Defaults.automaticallyChecksForUpdates)
+      updateService?.automaticallyChecksForUpdates = automaticallyChecksForUpdates
+    }
+  }
+
   private let discoveryService: DiscoveryService
   private let profileStore: ProfileStore
   private let notificationService: NotificationService
+  private var updateService: UpdateService?
   private let processController = ProcessController()
   private var refreshTask: Task<Void, Never>?
   private var startedProcesses: [UUID: Process] = [:]
@@ -72,6 +84,12 @@ public final class AppState {
     self.showStatusCount = UserDefaults.standard.object(forKey: Defaults.showStatusCount) as? Bool ?? true
     self.confirmForceKill = UserDefaults.standard.object(forKey: Defaults.confirmForceKill) as? Bool ?? true
     self.showAppleServices = UserDefaults.standard.object(forKey: Defaults.showAppleServices) as? Bool ?? false
+    self.updateChannel = UpdateChannel(
+      rawValue: UserDefaults.standard.string(forKey: Defaults.updateChannel) ?? ""
+    ) ?? .stable
+    self.automaticallyChecksForUpdates = UserDefaults.standard.object(
+      forKey: Defaults.automaticallyChecksForUpdates
+    ) as? Bool ?? true
     if let data = UserDefaults.standard.data(forKey: Defaults.notificationSettings),
        let settings = try? JSONDecoder().decode(NotificationSettings.self, from: data) {
       self.notificationSettings = settings
@@ -118,6 +136,7 @@ public final class AppState {
   public func bootstrap() async {
     guard !hasBootstrapped else { return }
     hasBootstrapped = true
+    startUpdaterIfNeeded()
     await refreshNotificationAuthorization()
     await loadProfiles()
     await refresh()
@@ -181,6 +200,15 @@ public final class AppState {
     } catch {
       errorMessage = "Could not send test notification: \(error.localizedDescription)"
     }
+  }
+
+  public var updatesConfigured: Bool {
+    UpdateService.isConfigured
+  }
+
+  public func checkForUpdates() {
+    startUpdaterIfNeeded()
+    updateService?.checkForUpdates()
   }
 
   public func loadProfiles() async {
@@ -369,6 +397,14 @@ public final class AppState {
       }
     }
   }
+
+  private func startUpdaterIfNeeded() {
+    guard updateService == nil else { return }
+    updateService = UpdateService { [weak self] in
+      self?.updateChannel ?? .stable
+    }
+    updateService?.automaticallyChecksForUpdates = automaticallyChecksForUpdates
+  }
 }
 
 private enum Defaults {
@@ -378,4 +414,6 @@ private enum Defaults {
   static let confirmForceKill = "confirmForceKill"
   static let showAppleServices = "showAppleServices"
   static let notificationSettings = "notificationSettings"
+  static let updateChannel = "updateChannel"
+  static let automaticallyChecksForUpdates = "automaticallyChecksForUpdates"
 }

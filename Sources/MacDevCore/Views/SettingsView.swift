@@ -183,16 +183,25 @@ public struct SettingsView: View {
 
   private var updatesTab: some View {
     SettingsSection("Updates") {
-      Toggle("Check for updates automatically", isOn: .constant(true))
-      Picker("Update channel", selection: .constant("Stable")) {
-        Text("Stable").tag("Stable")
-        Text("Beta").tag("Beta")
+      Toggle("Check for updates automatically", isOn: $appState.automaticallyChecksForUpdates)
+      Picker("Update channel", selection: $appState.updateChannel) {
+        ForEach(UpdateChannel.allCases) { channel in
+          Text(channel.title).tag(channel)
+        }
       }
       .pickerStyle(.menu)
-      Button("Check for Updates...", systemImage: "arrow.down.circle") {}
+      Button("Check for Updates...", systemImage: "arrow.down.circle") {
+        appState.checkForUpdates()
+      }
+      .disabled(!appState.updatesConfigured)
       Text("Sparkle-backed updates are wired in this release branch. Stable receives normal GitHub releases; Beta also receives prereleases.")
         .font(.caption)
         .foregroundStyle(.secondary)
+      if !appState.updatesConfigured {
+        Text("Update checks are disabled in local builds until MACDEV_SPARKLE_PUBLIC_KEY is provided during packaging.")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
     }
   }
 

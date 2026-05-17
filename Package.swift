@@ -11,9 +11,15 @@ let package = Package(
     .executable(name: "MacDev", targets: ["MacDev"]),
     .library(name: "MacDevCore", targets: ["MacDevCore"])
   ],
+  dependencies: [
+    .package(url: "https://github.com/sparkle-project/Sparkle.git", from: "2.9.2")
+  ],
   targets: [
     .target(
       name: "MacDevCore",
+      dependencies: [
+        .product(name: "Sparkle", package: "Sparkle")
+      ],
       path: "Sources/MacDevCore"
     ),
     .executableTarget(
