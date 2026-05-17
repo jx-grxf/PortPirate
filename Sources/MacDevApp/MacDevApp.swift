@@ -35,6 +35,8 @@ struct MacDevApp: App {
     Settings {
       SettingsView(appState: appState)
     }
+    .defaultSize(width: 560, height: 610)
+    .windowResizability(.contentSize)
   }
 }
 
