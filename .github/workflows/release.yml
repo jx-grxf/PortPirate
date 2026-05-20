@@ -59,12 +59,14 @@ jobs:
       - name: Build DMG
         env:
           MACDEV_VERSION: ${{ steps.version.outputs.version }}
+          MACDEV_BUILD: ${{ github.run_number }}
           MACDEV_SPARKLE_PUBLIC_KEY: ${{ secrets.MACDEV_SPARKLE_PUBLIC_KEY }}
         run: ./script/package_dmg.sh
 
       - name: Build Sparkle assets
         env:
           MACDEV_VERSION: ${{ steps.version.outputs.version }}
+          MACDEV_BUILD: ${{ github.run_number }}
           MACDEV_UPDATE_CHANNEL: ${{ steps.version.outputs.channel }}
           MACDEV_SPARKLE_PUBLIC_KEY: ${{ secrets.MACDEV_SPARKLE_PUBLIC_KEY }}
           MACDEV_SPARKLE_PRIVATE_KEY: ${{ secrets.MACDEV_SPARKLE_PRIVATE_KEY }}
