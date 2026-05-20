@@ -1,5 +1,11 @@
 import SwiftUI
 
+extension View {
+  func panelRowBackground() -> some View {
+    glassInteractive()
+  }
+}
+
 struct SectionHeader: View {
   let title: String
   let systemImage: String
@@ -27,7 +33,7 @@ struct EmptyStateRow: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(10)
-    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
+    .panelRowBackground()
   }
 }
 
@@ -89,7 +95,7 @@ struct ServerRowView: View {
       }
     }
     .padding(10)
-    .background(.quaternary.opacity(0.28), in: RoundedRectangle(cornerRadius: 8))
+    .panelRowBackground()
     .contextMenu {
       Button("Diagnose") { appState.diagnose(server: server) }
       Button("Open URL") { appState.open(server: server) }
@@ -158,7 +164,7 @@ struct ProfileRowView: View {
       }
     }
     .padding(10)
-    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
+    .panelRowBackground()
   }
 }
 
@@ -181,7 +187,7 @@ struct LaunchAgentRow: View {
       Spacer()
     }
     .padding(8)
-    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
+    .panelRowBackground()
   }
 }
 
@@ -216,6 +222,6 @@ struct RunningScriptRow: View {
       }
     }
     .padding(8)
-    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
+    .panelRowBackground()
   }
 }
