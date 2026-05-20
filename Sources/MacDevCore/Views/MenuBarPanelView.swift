@@ -15,12 +15,10 @@ public struct MenuBarPanelView: View {
   public var body: some View {
     VStack(spacing: 0) {
       header
-      Divider()
       diagnosisBar
-      Divider()
 
       ScrollView {
-        LazyVStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: Theme.s3) {
           if let errorMessage = appState.errorMessage {
             ErrorBanner(message: errorMessage) {
               Task { await appState.refresh() }
@@ -31,14 +29,14 @@ public struct MenuBarPanelView: View {
           appleServicesSection
           toolsSection
         }
-        .padding(14)
+        .padding(Theme.s3)
       }
+      .scrollContentBackground(.hidden)
 
-      Divider()
       footer
     }
     .frame(width: 440, height: 560)
-    .background(.regularMaterial)
+    .background(.ultraThinMaterial)
     .task {
       await appState.bootstrap()
       await appState.refreshNotificationAuthorization()
@@ -46,9 +44,9 @@ public struct MenuBarPanelView: View {
   }
 
   private var header: some View {
-    HStack(spacing: 10) {
+    HStack(spacing: Theme.s3) {
       StatusDot(appState.status)
-      VStack(alignment: .leading, spacing: 2) {
+      VStack(alignment: .leading, spacing: 1) {
         Text("MacDev")
           .font(.headline)
         Text(summaryText)
@@ -69,27 +67,42 @@ public struct MenuBarPanelView: View {
       .help("Refresh")
       .disabled(appState.isRefreshing)
     }
-    .padding(14)
+    .padding(.horizontal, Theme.s4)
+    .padding(.vertical, Theme.s3)
   }
 
   private var diagnosisBar: some View {
-    HStack(spacing: 8) {
-      TextField("3000", text: $appState.diagnosisPortText)
-        .textFieldStyle(.roundedBorder)
+    HStack(spacing: Theme.s2) {
+      Image(systemName: "magnifyingglass")
+        .font(.system(size: 12, weight: .semibold))
+        .foregroundStyle(.secondary)
+
+      TextField("Diagnose a port…", text: $appState.diagnosisPortText)
+        .textFieldStyle(.plain)
         .onSubmit { appState.diagnosePortText() }
         .accessibilityLabel("Port to diagnose")
 
-      Button("Diagnose Port", systemImage: "magnifyingglass") {
-        appState.diagnosePortText()
+      if !appState.diagnosisPortText.isEmpty {
+        Button {
+          appState.diagnosePortText()
+        } label: {
+          Image(systemName: "arrow.right.circle.fill")
+            .font(.system(size: 15))
+            .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.plain)
+        .help("Diagnose Port")
       }
-      .labelStyle(.iconOnly)
-      .help("Diagnose Port")
     }
-    .padding(14)
+    .padding(.horizontal, Theme.s3)
+    .padding(.vertical, Theme.s2 + 1)
+    .glassInteractive(cornerRadius: 10)
+    .padding(.horizontal, Theme.s3)
+    .padding(.bottom, Theme.s2)
   }
 
   private var serverSection: some View {
-    VStack(alignment: .leading, spacing: 8) {
+    VStack(alignment: .leading, spacing: Theme.s2) {
       SectionHeader(title: "Local runtimes", systemImage: "server.rack")
 
       if appState.developerServers.isEmpty {
@@ -111,33 +124,15 @@ public struct MenuBarPanelView: View {
     let backgroundServers = appState.backgroundServers
 
     if !backgroundServers.isEmpty {
-      VStack(alignment: .leading, spacing: 8) {
-        Button {
-          withAnimation(.snappy(duration: 0.18)) {
-            isBackgroundExpanded.toggle()
-          }
-        } label: {
-          HStack(spacing: 6) {
-            Image(systemName: isBackgroundExpanded ? "chevron.down" : "chevron.right")
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .frame(width: 12)
-            SectionHeader(title: "Other listeners", systemImage: "app.connected.to.app.below.fill")
-            Spacer()
-            Text("\(backgroundServers.count)")
-              .font(.caption.monospacedDigit())
-              .foregroundStyle(.secondary)
-          }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Other listeners")
-        .accessibilityValue(isBackgroundExpanded ? "Expanded" : "Collapsed")
-
-        if isBackgroundExpanded {
+      DisclosureGroup(isExpanded: $isBackgroundExpanded.animation(Theme.expand)) {
+        VStack(spacing: Theme.s2) {
           ForEach(backgroundServers.prefix(6)) { server in
             ServerRowView(appState: appState, server: server, allowsStop: false)
           }
         }
+        .padding(.top, Theme.s2)
+      } label: {
+        sectionLabel("Other listeners", systemImage: "app.connected.to.app.below.fill", count: backgroundServers.count)
       }
     }
   }
@@ -147,74 +142,57 @@ public struct MenuBarPanelView: View {
     let appleServices = appState.appleServiceServers
 
     if !appleServices.isEmpty {
-      VStack(alignment: .leading, spacing: 8) {
-        Button {
-          withAnimation(.snappy(duration: 0.18)) {
-            isAppleServicesExpanded.toggle()
-          }
-        } label: {
-          HStack(spacing: 6) {
-            Image(systemName: isAppleServicesExpanded ? "chevron.down" : "chevron.right")
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .frame(width: 12)
-            SectionHeader(title: "Apple services", systemImage: "apple.logo")
-            Spacer()
-            Text("\(appleServices.count)")
-              .font(.caption.monospacedDigit())
-              .foregroundStyle(.secondary)
-          }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Apple services")
-        .accessibilityValue(isAppleServicesExpanded ? "Expanded" : "Collapsed")
-
-        if appState.showAppleServices {
-          if isAppleServicesExpanded {
+      DisclosureGroup(isExpanded: $isAppleServicesExpanded.animation(Theme.expand)) {
+        VStack(spacing: Theme.s2) {
+          if appState.showAppleServices {
             ForEach(appleServices.prefix(8)) { server in
               ServerRowView(appState: appState, server: server, allowsStop: false)
             }
+          } else {
+            EmptyStateRow(
+              title: "Apple services hidden",
+              subtitle: "Enable them in Settings if you want system listeners in the menu."
+            )
           }
-        } else {
-          EmptyStateRow(
-            title: "Apple services hidden",
-            subtitle: "Enable them in Settings if you want system listeners in the menu."
-          )
         }
+        .padding(.top, Theme.s2)
+      } label: {
+        sectionLabel("Apple services", systemImage: "apple.logo", count: appleServices.count)
       }
     }
   }
 
   private var toolsSection: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Button {
-        withAnimation(.snappy(duration: 0.18)) {
-          isToolsExpanded.toggle()
-        }
-      } label: {
-        HStack(spacing: 6) {
-          Image(systemName: isToolsExpanded ? "chevron.down" : "chevron.right")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .frame(width: 12)
-          SectionHeader(title: "Tools", systemImage: "wrench.and.screwdriver")
-          Spacer()
-        }
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel("Tools")
-      .accessibilityValue(isToolsExpanded ? "Expanded" : "Collapsed")
-
-      if isToolsExpanded {
+    DisclosureGroup(isExpanded: $isToolsExpanded.animation(Theme.expand)) {
+      VStack(alignment: .leading, spacing: Theme.s3) {
         profileSection
         launchdSection
         logsSection
       }
+      .padding(.top, Theme.s2)
+    } label: {
+      sectionLabel("Tools", systemImage: "wrench.and.screwdriver")
     }
   }
 
+  private func sectionLabel(_ title: String, systemImage: String, count: Int? = nil) -> some View {
+    HStack(spacing: Theme.s2) {
+      SectionHeader(title: title, systemImage: systemImage)
+      Spacer()
+      if let count {
+        Text("\(count)")
+          .font(.caption.monospacedDigit())
+          .foregroundStyle(.secondary)
+          .padding(.horizontal, 7)
+          .padding(.vertical, 1)
+          .background(.quaternary, in: Capsule())
+      }
+    }
+    .contentShape(.rect)
+  }
+
   private var profileSection: some View {
-    VStack(alignment: .leading, spacing: 8) {
+    VStack(alignment: .leading, spacing: Theme.s2) {
       SectionHeader(title: "Workspaces", systemImage: "folder")
 
       if appState.profiles.isEmpty {
@@ -228,7 +206,7 @@ public struct MenuBarPanelView: View {
   }
 
   private var launchdSection: some View {
-    VStack(alignment: .leading, spacing: 8) {
+    VStack(alignment: .leading, spacing: Theme.s2) {
       SectionHeader(title: "User agents", systemImage: "gearshape.2")
 
       if !appState.includeLaunchAgents {
@@ -244,7 +222,7 @@ public struct MenuBarPanelView: View {
   }
 
   private var logsSection: some View {
-    VStack(alignment: .leading, spacing: 8) {
+    VStack(alignment: .leading, spacing: Theme.s2) {
       SectionHeader(title: "Started by MacDev", systemImage: "doc.text.magnifyingglass")
 
       if appState.runningScripts.isEmpty {
@@ -258,7 +236,7 @@ public struct MenuBarPanelView: View {
   }
 
   private var footer: some View {
-    HStack(spacing: 10) {
+    HStack(spacing: Theme.s2) {
       Button {
         MacDevWindowFocus.activateApp()
         openSettings()
@@ -294,8 +272,8 @@ public struct MenuBarPanelView: View {
       .help("Quit MacDev")
     }
     .controlSize(.small)
-    .padding(.horizontal, 14)
-    .padding(.vertical, 10)
+    .padding(.horizontal, Theme.s4)
+    .padding(.vertical, Theme.s3 - 2)
   }
 
   private var summaryText: String {
@@ -317,10 +295,10 @@ private struct ErrorBanner: View {
   let retry: () -> Void
 
   var body: some View {
-    HStack(spacing: 8) {
+    HStack(spacing: Theme.s2) {
       Label(message, systemImage: "exclamationmark.triangle")
         .lineLimit(2)
-      Spacer(minLength: 8)
+      Spacer(minLength: Theme.s2)
       Button("Retry", systemImage: "arrow.clockwise", action: retry)
         .labelStyle(.iconOnly)
         .buttonStyle(.borderless)
@@ -329,7 +307,7 @@ private struct ErrorBanner: View {
     .font(.caption)
     .foregroundStyle(.primary)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(10)
-    .background(.yellow.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+    .padding(Theme.s3)
+    .background(.yellow.opacity(0.14), in: RoundedRectangle(cornerRadius: Theme.rowRadius))
   }
 }

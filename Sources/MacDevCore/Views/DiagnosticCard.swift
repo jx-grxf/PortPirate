@@ -30,6 +30,6 @@ struct DiagnosticCard: View {
       }
     }
     .padding(10)
-    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+    .panelRowBackground()
   }
 }
