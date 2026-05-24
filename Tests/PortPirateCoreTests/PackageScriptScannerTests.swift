@@ -1,5 +1,5 @@
 import XCTest
-@testable import MacDevCore
+@testable import PortPirateCore
 
 final class PackageScriptScannerTests: XCTestCase {
   func testScansPackageScriptsAndPackageManager() throws {

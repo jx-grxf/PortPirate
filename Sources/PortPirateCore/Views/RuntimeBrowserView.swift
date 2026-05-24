@@ -38,7 +38,7 @@ public struct RuntimeBrowserView: View {
         }
       }
       .listStyle(.sidebar)
-      .navigationTitle("MacDev")
+      .navigationTitle("PortPirate")
       .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
       .searchable(text: $searchText, placement: .sidebar, prompt: "Search runtimes")
       .toolbar {
@@ -49,9 +49,9 @@ public struct RuntimeBrowserView: View {
         }
         ToolbarItem {
           Button("Settings", systemImage: "gearshape") {
-            MacDevWindowFocus.activateApp()
+            PortPirateWindowFocus.activateApp()
             openSettings()
-            MacDevWindowFocus.bringSettingsForward()
+            PortPirateWindowFocus.bringSettingsForward()
           }
           .labelStyle(.iconOnly)
           .help("Settings")

@@ -3,8 +3,8 @@ import Sparkle
 
 @MainActor
 public final class UpdateService: NSObject {
-  public static let stableAppcastURLString = "https://github.com/jx-grxf/MacDev/releases/latest/download/appcast.xml"
-  public static let betaAppcastURLString = "https://github.com/jx-grxf/MacDev/releases/download/beta/appcast.xml"
+  public static let stableAppcastURLString = "https://github.com/jx-grxf/PortPirate/releases/latest/download/appcast.xml"
+  public static let betaAppcastURLString = "https://github.com/jx-grxf/PortPirate/releases/download/beta/appcast.xml"
 
   public static var isConfigured: Bool {
     guard let key = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String else {

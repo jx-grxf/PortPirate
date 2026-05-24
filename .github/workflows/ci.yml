@@ -34,4 +34,4 @@ jobs:
         run: ./script/build_and_run.sh build-only
 
       - name: Verify app signature
-        run: codesign --verify --deep --strict dist/MacDev.app
+        run: codesign --verify --deep --strict dist/PortPirate.app

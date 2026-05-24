@@ -2,15 +2,15 @@
 set -euo pipefail
 
 MODE="${1:-run}"
-APP_NAME="MacDev"
-BUNDLE_ID="at.johannesgrof.MacDev"
+APP_NAME="PortPirate"
+BUNDLE_ID="at.johannesgrof.PortPirate"
 MIN_SYSTEM_VERSION="14.0"
-APP_VERSION="${MACDEV_VERSION:-0.2.0}"
-CONFIGURATION="${MACDEV_CONFIGURATION:-debug}"
-SIGN_IDENTITY="${MACDEV_SIGN_IDENTITY:--}"
+APP_VERSION="${PORTPIRATE_VERSION:-0.2.0}"
+CONFIGURATION="${PORTPIRATE_CONFIGURATION:-debug}"
+SIGN_IDENTITY="${PORTPIRATE_SIGN_IDENTITY:--}"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUILD_NUMBER="${MACDEV_BUILD:-$(git -C "$ROOT_DIR" rev-list --count HEAD 2>/dev/null || echo 1)}"
+BUILD_NUMBER="${PORTPIRATE_BUILD:-$(git -C "$ROOT_DIR" rev-list --count HEAD 2>/dev/null || echo 1)}"
 DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
 APP_CONTENTS="$APP_BUNDLE/Contents"
@@ -20,8 +20,8 @@ APP_FRAMEWORKS="$APP_CONTENTS/Frameworks"
 APP_BINARY="$APP_MACOS/$APP_NAME"
 INFO_PLIST="$APP_CONTENTS/Info.plist"
 APP_ICON="$ROOT_DIR/Assets/AppIcon/AppIcon.icns"
-SPARKLE_PUBLIC_KEY="${MACDEV_SPARKLE_PUBLIC_KEY:-development-placeholder}"
-SPARKLE_FEED_URL="${MACDEV_SPARKLE_FEED_URL:-https://github.com/jx-grxf/MacDev/releases/latest/download/appcast.xml}"
+SPARKLE_PUBLIC_KEY="${PORTPIRATE_SPARKLE_PUBLIC_KEY:-development-placeholder}"
+SPARKLE_FEED_URL="${PORTPIRATE_SPARKLE_FEED_URL:-https://github.com/jx-grxf/PortPirate/releases/latest/download/appcast.xml}"
 
 pkill -x "$APP_NAME" >/dev/null 2>&1 || true
 

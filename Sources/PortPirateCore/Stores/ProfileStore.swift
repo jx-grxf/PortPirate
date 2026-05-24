@@ -5,7 +5,7 @@ public actor ProfileStore {
 
   public init(fileManager: FileManager = .default) {
     let baseURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-    let directory = baseURL.appendingPathComponent("MacDev", isDirectory: true)
+    let directory = baseURL.appendingPathComponent("PortPirate", isDirectory: true)
     try? fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
     self.fileURL = directory.appendingPathComponent("profiles.json")
   }

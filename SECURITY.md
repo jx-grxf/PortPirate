@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-MacDev is currently a preview project. Security fixes target the latest `main` branch and the latest GitHub Release.
+PortPirate is currently a preview project. Security fixes target the latest `main` branch and the latest GitHub Release.
 
 ## Reporting a Vulnerability
 
@@ -13,14 +13,14 @@ Report privately through GitHub Security Advisories when available, or contact t
 Include:
 
 - macOS version
-- MacDev version or commit SHA
+- PortPirate version or commit SHA
 - clear reproduction steps
 - expected impact
 - whether the issue requires a malicious local project, a local process, or a downloaded release asset
 
 ## Security Model
 
-MacDev is designed as a local-only macOS utility:
+PortPirate is designed as a local-only macOS utility:
 
 - no analytics
 - no backend service

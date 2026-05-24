@@ -1,5 +1,5 @@
 import XCTest
-@testable import MacDevCore
+@testable import PortPirateCore
 
 final class ListeningServerTests: XCTestCase {
   func testDisplayPortDoesNotUseLocaleGrouping() {
@@ -17,7 +17,7 @@ final class ListeningServerTests: XCTestCase {
   }
 
   func testRootWorkingDirectoryFallsBackToProcessName() {
-    let process = MacDevProcess(
+    let process = PortPirateProcess(
       id: 42,
       parentID: nil,
       user: "johannes",

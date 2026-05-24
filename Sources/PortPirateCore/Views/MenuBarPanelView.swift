@@ -47,7 +47,7 @@ public struct MenuBarPanelView: View {
     HStack(spacing: Theme.s3) {
       StatusDot(appState.status)
       VStack(alignment: .leading, spacing: 1) {
-        Text("MacDev")
+        Text("PortPirate")
           .font(.headline)
         Text(summaryText)
           .font(.caption)
@@ -106,7 +106,7 @@ public struct MenuBarPanelView: View {
       SectionHeader(title: "Local runtimes", systemImage: "server.rack")
 
       if appState.developerServers.isEmpty {
-        EmptyStateRow(title: "No listening dev ports", subtitle: "Start a server and MacDev will pick it up.")
+        EmptyStateRow(title: "No listening dev ports", subtitle: "Start a server and PortPirate will pick it up.")
       } else {
         ForEach(appState.developerServers.prefix(8)) { server in
           ServerRowView(appState: appState, server: server)
@@ -212,7 +212,7 @@ public struct MenuBarPanelView: View {
       if !appState.includeLaunchAgents {
         EmptyStateRow(title: "launchd hidden", subtitle: "Enable read-only user agents in Settings.")
       } else if appState.launchAgents.isEmpty {
-        EmptyStateRow(title: "No parsed user agents", subtitle: "MacDev could not parse launchctl entries yet.")
+        EmptyStateRow(title: "No parsed user agents", subtitle: "PortPirate could not parse launchctl entries yet.")
       } else {
         ForEach(appState.launchAgents.prefix(5)) { agent in
           LaunchAgentRow(agent: agent)
@@ -223,10 +223,10 @@ public struct MenuBarPanelView: View {
 
   private var logsSection: some View {
     VStack(alignment: .leading, spacing: Theme.s2) {
-      SectionHeader(title: "Started by MacDev", systemImage: "doc.text.magnifyingglass")
+      SectionHeader(title: "Started by PortPirate", systemImage: "doc.text.magnifyingglass")
 
       if appState.runningScripts.isEmpty {
-        EmptyStateRow(title: "No managed logs", subtitle: "Logs appear for scripts launched by MacDev.")
+        EmptyStateRow(title: "No managed logs", subtitle: "Logs appear for scripts launched by PortPirate.")
       } else {
         ForEach(appState.runningScripts) { script in
           RunningScriptRow(appState: appState, script: script)
@@ -238,9 +238,9 @@ public struct MenuBarPanelView: View {
   private var footer: some View {
     HStack(spacing: Theme.s2) {
       Button {
-        MacDevWindowFocus.activateApp()
+        PortPirateWindowFocus.activateApp()
         openSettings()
-        MacDevWindowFocus.bringSettingsForward()
+        PortPirateWindowFocus.bringSettingsForward()
       } label: {
         Label("Settings", systemImage: "gearshape")
       }
@@ -249,9 +249,9 @@ public struct MenuBarPanelView: View {
       .help("Settings")
 
       Button {
-        MacDevWindowFocus.activateApp()
+        PortPirateWindowFocus.activateApp()
         openWindow(id: "runtime-browser")
-        MacDevWindowFocus.bringWindowForward(title: "Runtime Browser")
+        PortPirateWindowFocus.bringWindowForward(title: "Runtime Browser")
       } label: {
         Label("Runtime Browser", systemImage: "sidebar.leading")
       }
@@ -269,7 +269,7 @@ public struct MenuBarPanelView: View {
       .labelStyle(.iconOnly)
       .keyboardShortcut("q")
       .buttonStyle(.borderless)
-      .help("Quit MacDev")
+      .help("Quit PortPirate")
     }
     .controlSize(.small)
     .padding(.horizontal, Theme.s4)

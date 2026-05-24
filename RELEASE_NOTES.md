@@ -1,6 +1,6 @@
-# MacDev 0.2.2
+# PortPirate 0.2.2
 
-MacDev is a native macOS menu bar utility for finding, diagnosing, and safely controlling local developer runtimes.
+PortPirate is a native macOS menu bar utility for finding, diagnosing, and safely controlling local developer runtimes.
 
 ## Fixed
 
@@ -14,4 +14,4 @@ MacDev is a native macOS menu bar utility for finding, diagnosing, and safely co
 
 ## Pull Requests
 
-- [#7](https://github.com/jx-grxf/MacDev/pull/7) Fix Sparkle update detection with a monotonic build number.
+- [#7](https://github.com/jx-grxf/PortPirate/pull/7) Fix Sparkle update detection with a monotonic build number.

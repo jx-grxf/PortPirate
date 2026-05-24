@@ -6,7 +6,7 @@ public struct ListeningServer: Identifiable, Hashable, Codable, Sendable {
   public let addresses: [String]
   public let processID: Int32
   public let processName: String
-  public let process: MacDevProcess?
+  public let process: PortPirateProcess?
   public let runtime: RuntimeKind
   public let warning: String?
   public let detectedAt: Date
@@ -16,7 +16,7 @@ public struct ListeningServer: Identifiable, Hashable, Codable, Sendable {
     addresses: [String],
     processID: Int32,
     processName: String,
-    process: MacDevProcess?,
+    process: PortPirateProcess?,
     runtime: RuntimeKind,
     warning: String?,
     detectedAt: Date = Date()

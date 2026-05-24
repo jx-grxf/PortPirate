@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_NAME="MacDev"
-VERSION="${MACDEV_VERSION:-0.1.0}"
+APP_NAME="PortPirate"
+VERSION="${PORTPIRATE_VERSION:-0.1.0}"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
@@ -11,7 +11,7 @@ DMG_PATH="$DIST_DIR/$APP_NAME-$VERSION.dmg"
 STAGING_DIR="$DIST_DIR/dmg-staging"
 
 cd "$ROOT_DIR"
-MACDEV_VERSION="$VERSION" MACDEV_CONFIGURATION=release ./script/build_and_run.sh build-only
+PORTPIRATE_VERSION="$VERSION" PORTPIRATE_CONFIGURATION=release ./script/build_and_run.sh build-only
 
 if ! command -v create-dmg >/dev/null 2>&1; then
   echo "create-dmg is required for release DMGs. Install it with: brew install create-dmg" >&2

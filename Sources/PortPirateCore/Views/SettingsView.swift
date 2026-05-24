@@ -109,7 +109,7 @@ private struct GeneralPane: View {
 
         SettingRow(
           title: "Refresh interval",
-          subtitle: "How often MacDev scans localhost listeners in the background.",
+          subtitle: "How often PortPirate scans localhost listeners in the background.",
           showsDivider: false
         ) {
           HStack(spacing: Theme.s2) {
@@ -142,7 +142,7 @@ private struct DiscoveryPane: View {
 
         SettingRow(
           title: "Show launchd user agents",
-          subtitle: "Read-only visibility for user agents. MacDev does not stop launchd services.",
+          subtitle: "Read-only visibility for user agents. PortPirate does not stop launchd services.",
           showsDivider: false
         ) {
           Toggle("", isOn: $appState.includeLaunchAgents).labelsHidden()
@@ -222,7 +222,7 @@ private struct ActionsPane: View {
       SettingsCard(title: "Process Control") {
         SettingRow(
           title: "Stop actions are revalidated",
-          subtitle: "MacDev checks PID, port, command, owner, and working directory before touching a process.",
+          subtitle: "PortPirate checks PID, port, command, owner, and working directory before touching a process.",
           systemImage: "checkmark.shield"
         )
         SettingRow(
@@ -273,8 +273,8 @@ private struct NotificationsPane: View {
           Toggle("", isOn: binding(\.portCollisionsEnabled)).labelsHidden()
         }
         SettingRow(
-          title: "A MacDev-managed process exits with an error",
-          subtitle: "Only applies to scripts launched from MacDev workspace profiles."
+          title: "A PortPirate-managed process exits with an error",
+          subtitle: "Only applies to scripts launched from PortPirate workspace profiles."
         ) {
           Toggle("", isOn: binding(\.managedProcessCrashEnabled)).labelsHidden()
         }
@@ -350,7 +350,7 @@ private struct UpdatesPane: View {
         } else {
           SettingRow(
             title: "Local build update checks are disabled",
-            subtitle: "Package with MACDEV_SPARKLE_PUBLIC_KEY to enable Sparkle in this app bundle.",
+            subtitle: "Package with PORTPIRATE_SPARKLE_PUBLIC_KEY to enable Sparkle in this app bundle.",
             systemImage: "exclamationmark.triangle",
             showsDivider: false
           )
@@ -374,7 +374,7 @@ private struct AboutPane: View {
       Spacer(minLength: Theme.s4)
 
       Button {
-        open("https://github.com/jx-grxf/MacDev")
+        open("https://github.com/jx-grxf/PortPirate")
       } label: {
         Image(nsImage: appIcon)
           .resizable()
@@ -383,10 +383,10 @@ private struct AboutPane: View {
           .shadow(color: .black.opacity(0.25), radius: 10, y: 5)
       }
       .buttonStyle(.plain)
-      .help("Open MacDev on GitHub")
+      .help("Open PortPirate on GitHub")
 
       VStack(spacing: Theme.s1) {
-        Text("MacDev")
+        Text("PortPirate")
           .font(.title.weight(.bold))
         Text("Version \(versionString)")
           .foregroundStyle(.secondary)
@@ -398,9 +398,9 @@ private struct AboutPane: View {
       }
 
       HStack(spacing: Theme.s3) {
-        LinkRow(systemImage: "chevron.left.slash.chevron.right", title: "GitHub", url: "https://github.com/jx-grxf/MacDev")
-        LinkRow(systemImage: "globe", title: "Website", url: "https://johannesgrof.me/projects/macdev")
-        LinkRow(systemImage: "arrow.down.circle", title: "Releases", url: "https://github.com/jx-grxf/MacDev/releases")
+        LinkRow(systemImage: "chevron.left.slash.chevron.right", title: "GitHub", url: "https://github.com/jx-grxf/PortPirate")
+        LinkRow(systemImage: "globe", title: "Website", url: "https://johannesgrof.me/projects/portpirate")
+        LinkRow(systemImage: "arrow.down.circle", title: "Releases", url: "https://github.com/jx-grxf/PortPirate/releases")
       }
       .padding(.top, Theme.s2)
 
