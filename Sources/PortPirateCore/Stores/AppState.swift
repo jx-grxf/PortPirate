@@ -14,7 +14,7 @@ public final class AppState {
   public var diagnosisPortText = ""
   public var isRefreshing = false
   public var errorMessage: String?
-  public var notificationAuthorization: MacDevNotificationAuthorization = .unknown
+  public var notificationAuthorization: PortPirateNotificationAuthorization = .unknown
 
   public var refreshInterval: Double {
     didSet { UserDefaults.standard.set(refreshInterval, forKey: Defaults.refreshInterval) }

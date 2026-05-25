@@ -1,7 +1,7 @@
 import Foundation
 import UserNotifications
 
-public enum MacDevNotificationAuthorization: String, Sendable {
+public enum PortPirateNotificationAuthorization: String, Sendable {
   case notDetermined
   case denied
   case authorized
@@ -34,7 +34,7 @@ public actor NotificationService {
     self.cooldown = cooldown
   }
 
-  public func authorizationStatus() async -> MacDevNotificationAuthorization {
+  public func authorizationStatus() async -> PortPirateNotificationAuthorization {
     let settings = await center.notificationSettings()
     switch settings.authorizationStatus {
     case .notDetermined: return .notDetermined
@@ -54,7 +54,7 @@ public actor NotificationService {
   public func sendTestNotification() async throws {
     try await send(
       id: "test",
-      title: "MacDev notifications are working",
+      title: "PortPirate notifications are working",
       body: "You will get alerts for collisions, missing expected ports, crashes, and scan failures.",
       bypassCooldown: true
     )
@@ -72,7 +72,7 @@ public actor NotificationService {
     try await send(
       id: "missing-\(profile.id)-\(port)",
       title: "Expected port \(port) is missing",
-      body: "\(profile.name) expects localhost:\(port), but MacDev did not find a listener."
+      body: "\(profile.name) expects localhost:\(port), but PortPirate did not find a listener."
     )
   }
 
@@ -87,7 +87,7 @@ public actor NotificationService {
   public func notifyScanFailure(_ message: String) async throws {
     try await send(
       id: "scan-failure",
-      title: "MacDev scan failed",
+      title: "PortPirate scan failed",
       body: message
     )
   }
@@ -106,7 +106,7 @@ public actor NotificationService {
     content.body = body
     content.sound = .default
 
-    let request = UNNotificationRequest(identifier: "macdev-\(id)", content: content, trigger: nil)
+    let request = UNNotificationRequest(identifier: "portpirate-\(id)", content: content, trigger: nil)
     try await center.add(request)
   }
 }

@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible MacDev problem.
+description: Report a reproducible PortPirate problem.
 title: "[Bug]: "
 labels: ["bug"]
 body:
@@ -10,7 +10,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: MacDev version
+      label: PortPirate version
       description: Release version or commit SHA.
       placeholder: "0.1.3"
     validations:
@@ -29,7 +29,7 @@ body:
       description: Include the command, runtime, port, or workspace state if relevant.
       placeholder: |
         1. Start a Vite server on port 5173.
-        2. Open MacDev.
+        2. Open PortPirate.
         3. ...
     validations:
       required: true

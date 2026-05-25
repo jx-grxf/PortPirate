@@ -4,7 +4,7 @@ Date: 2026-05-11
 
 ## Audience Impression
 
-MacDev now presents as a focused native macOS developer utility instead of an internal preview dump. The README leads with the product, download path, trust posture, and practical workflow before developer commands.
+PortPirate now presents as a focused native macOS developer utility instead of an internal preview dump. The README leads with the product, download path, trust posture, and practical workflow before developer commands.
 
 ## What Improved
 

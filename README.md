@@ -1,31 +1,31 @@
 <div align="center">
 
-# MacDev
+# PortPirate
 
 Native macOS menu bar control center for local developer runtimes.
 
-[![CI](https://github.com/jx-grxf/MacDev/actions/workflows/ci.yml/badge.svg)](https://github.com/jx-grxf/MacDev/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/jx-grxf/MacDev?label=release)](https://github.com/jx-grxf/MacDev/releases/latest)
+[![CI](https://github.com/jx-grxf/PortPirate/actions/workflows/ci.yml/badge.svg)](https://github.com/jx-grxf/PortPirate/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/jx-grxf/PortPirate?label=release)](https://github.com/jx-grxf/PortPirate/releases/latest)
 ![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-111111)
 ![Swift](https://img.shields.io/badge/swift-5.9-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-<img src="Assets/AppIcon/AppIcon1024.png" alt="MacDev app icon" width="112">
+<img src="Assets/AppIcon/AppIcon1024.png" alt="PortPirate app icon" width="112">
 
-[Download latest preview](https://github.com/jx-grxf/MacDev/releases/latest) | [Release runbook](docs/release.md) | [Security](SECURITY.md)
+[Download latest preview](https://github.com/jx-grxf/PortPirate/releases/latest) | [Release runbook](docs/release.md) | [Security](SECURITY.md)
 
 </div>
 
 > [!TIP]
-> MacDev is built for the exact moment when: "What the hell is running on port 3000?" "What dev server is blocking port 5050?" "What localhost instances are running?"
+> PortPirate is built for the exact moment when: "What the hell is running on port 3000?" "What dev server is blocking port 5050?" "What localhost instances are running?"
 
 ## Showcase
 
 <p align="center">
-  <img src="docs/assets/macdev-showcase.png" alt="MacDev menu bar runtime panel showing local runtimes, warnings, diagnostics, and system listeners" width="720">
+  <img src="docs/assets/portpirate-showcase.png" alt="PortPirate menu bar runtime panel showing local runtimes, warnings, diagnostics, and system listeners" width="720">
 </p>
 
-MacDev stays in the macOS menu bar and gives local development servers a visible control surface: scan active ports, identify the owning process, open the right localhost URL, diagnose collisions, and stop exact PIDs without broad destructive commands.
+PortPirate stays in the macOS menu bar and gives local development servers a visible control surface: scan active ports, identify the owning process, open the right localhost URL, diagnose collisions, and stop exact PIDs without broad destructive commands.
 
 It is intentionally local-first. There is no account, cloud sync, analytics pipeline, or backend service.
 
@@ -64,25 +64,25 @@ It is intentionally local-first. There is no account, cloud sync, analytics pipe
 
 The current preview DMG is attached to the latest GitHub Release:
 
-[Download MacDev from GitHub Releases](https://github.com/jx-grxf/MacDev/releases/latest)
+[Download PortPirate from GitHub Releases](https://github.com/jx-grxf/PortPirate/releases/latest)
 
 > [!IMPORTANT]
 > Preview builds are ad-hoc signed for bundle integrity but are not Developer ID notarized yet. macOS may show a Gatekeeper warning until notarized releases ship.
 
 ## Install
 
-1. Download the latest `MacDev-<version>.dmg` from GitHub Releases.
-2. Open the DMG and drag `MacDev.app` into Applications.
-3. Launch MacDev from Applications. It appears in the menu bar, not the Dock.
-4. If macOS blocks the preview build, right-click `MacDev.app`, choose Open, then confirm Open again.
+1. Download the latest `PortPirate-<version>.dmg` from GitHub Releases.
+2. Open the DMG and drag `PortPirate.app` into Applications.
+3. Launch PortPirate from Applications. It appears in the menu bar, not the Dock.
+4. If macOS blocks the preview build, right-click `PortPirate.app`, choose Open, then confirm Open again.
 
-MacDev currently ships as a preview build. Developer ID notarization, a Homebrew Cask, and fully automatic public distribution are on the roadmap.
+PortPirate currently ships as a preview build. Developer ID notarization, a Homebrew Cask, and fully automatic public distribution are on the roadmap.
 
 ## First Launch
 
-After launch, click the MacDev menu bar icon. The panel shows active local runtimes, warnings, and a port diagnosis field. Use Settings to add workspace folders, enable notifications, choose an update channel, and control which system listeners appear.
+After launch, click the PortPirate menu bar icon. The panel shows active local runtimes, warnings, and a port diagnosis field. Use Settings to add workspace folders, enable notifications, choose an update channel, and control which system listeners appear.
 
-If the app seems invisible, check the right side of the macOS menu bar. MacDev intentionally stays out of the Dock so it behaves like a lightweight developer utility.
+If the app seems invisible, check the right side of the macOS menu bar. PortPirate intentionally stays out of the Dock so it behaves like a lightweight developer utility.
 
 ## What Works Today
 
@@ -98,7 +98,7 @@ If the app seems invisible, check the right side of the macOS menu bar. MacDev i
 
 ## Safety and Trust
 
-MacDev is local-only. It does not collect analytics, upload process data, or use a backend service.
+PortPirate is local-only. It does not collect analytics, upload process data, or use a backend service.
 
 Process control is deliberately narrow:
 
@@ -112,11 +112,11 @@ Process control is deliberately narrow:
 
 ## Why This Exists
 
-Local development on macOS gets messy fast: `npm run dev` exits, a server keeps running, port 3000 is busy, Vite silently moves to another port, or AirPlay owns port 5000. MacDev makes those local runtimes visible and actionable from one native macOS surface.
+Local development on macOS gets messy fast: `npm run dev` exits, a server keeps running, port 3000 is busy, Vite silently moves to another port, or AirPlay owns port 5000. PortPirate makes those local runtimes visible and actionable from one native macOS surface.
 
 ## Current Workflow
 
-1. Open MacDev from the menu bar.
+1. Open PortPirate from the menu bar.
 2. Scan active listening ports and detected runtimes.
 3. Open a localhost URL, diagnose a busy port, or stop a specific process.
 4. Add workspace folders and run package scripts from saved profiles.
@@ -152,12 +152,12 @@ For development:
 ./script/build_and_run.sh
 ```
 
-The script builds MacDev, stages `dist/MacDev.app`, and launches the app bundle.
+The script builds PortPirate, stages `dist/PortPirate.app`, and launches the app bundle.
 
 To create a local preview DMG:
 
 ```bash
-MACDEV_VERSION=0.2.2 ./script/package_dmg.sh
+PORTPIRATE_VERSION=0.2.2 ./script/package_dmg.sh
 ```
 
 ## Usage
@@ -176,7 +176,7 @@ swift test
 ./script/build_and_run.sh --verify
 ```
 
-The scanner, parser, classifier, process-control, and profile logic live in `MacDevCore` so they can be tested without launching the app.
+The scanner, parser, classifier, process-control, and profile logic live in `PortPirateCore` so they can be tested without launching the app.
 
 ## Release Process
 

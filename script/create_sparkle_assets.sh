@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_NAME="MacDev"
-VERSION="${MACDEV_VERSION:-0.2.0}"
-CHANNEL="${MACDEV_UPDATE_CHANNEL:-stable}"
+APP_NAME="PortPirate"
+VERSION="${PORTPIRATE_VERSION:-0.2.0}"
+CHANNEL="${PORTPIRATE_UPDATE_CHANNEL:-stable}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
@@ -11,7 +11,7 @@ ARCHIVES_DIR="$DIST_DIR/sparkle"
 ZIP_PATH="$ARCHIVES_DIR/$APP_NAME-$VERSION.zip"
 RELEASE_NOTES_PATH="$ARCHIVES_DIR/$APP_NAME-$VERSION.md"
 GENERATE_APPCAST="$ROOT_DIR/.build/artifacts/sparkle/Sparkle/bin/generate_appcast"
-DOWNLOAD_PREFIX="${MACDEV_SPARKLE_DOWNLOAD_PREFIX:-https://github.com/jx-grxf/MacDev/releases/download/v$VERSION}"
+DOWNLOAD_PREFIX="${PORTPIRATE_SPARKLE_DOWNLOAD_PREFIX:-https://github.com/jx-grxf/PortPirate/releases/download/v$VERSION}"
 if [[ "$DOWNLOAD_PREFIX" != */ ]]; then
   DOWNLOAD_PREFIX="$DOWNLOAD_PREFIX/"
 fi
@@ -22,13 +22,13 @@ if [[ ! -x "$GENERATE_APPCAST" ]]; then
   exit 1
 fi
 
-if [[ -z "${MACDEV_SPARKLE_PRIVATE_KEY:-}" ]]; then
-  echo "MACDEV_SPARKLE_PRIVATE_KEY is required to sign Sparkle appcasts." >&2
+if [[ -z "${PORTPIRATE_SPARKLE_PRIVATE_KEY:-}" ]]; then
+  echo "PORTPIRATE_SPARKLE_PRIVATE_KEY is required to sign Sparkle appcasts." >&2
   exit 1
 fi
 
 cd "$ROOT_DIR"
-MACDEV_VERSION="$VERSION" MACDEV_CONFIGURATION=release ./script/build_and_run.sh build-only
+PORTPIRATE_VERSION="$VERSION" PORTPIRATE_CONFIGURATION=release ./script/build_and_run.sh build-only
 
 rm -rf "$ARCHIVES_DIR"
 mkdir -p "$ARCHIVES_DIR"
@@ -45,7 +45,7 @@ if [[ "$CHANNEL" == "beta" ]]; then
   appcast_args+=(--channel beta)
 fi
 
-printf '%s' "$MACDEV_SPARKLE_PRIVATE_KEY" |
+printf '%s' "$PORTPIRATE_SPARKLE_PRIVATE_KEY" |
   "$GENERATE_APPCAST" --ed-key-file - "${appcast_args[@]}" "$ARCHIVES_DIR"
 
 if ! grep -Fq "$EXPECTED_DOWNLOAD_URL" "$ARCHIVES_DIR/appcast.xml"; then

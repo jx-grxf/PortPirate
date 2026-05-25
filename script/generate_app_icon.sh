@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SOURCE_ICON="${1:-Assets/AppIcon/Source/macdev_logo.icon}"
+SOURCE_ICON="${1:-Assets/AppIcon/Source/portpirate_logo.icon}"
 WEBSITE_ROOT="${2:-}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_ICON_DIR="$ROOT_DIR/Assets/AppIcon"
@@ -51,8 +51,8 @@ done
 iconutil -c icns "$ICONSET" -o "$APP_ICON_DIR/AppIcon.icns"
 
 if [[ -n "$WEBSITE_ROOT" ]]; then
-  mkdir -p "$WEBSITE_ROOT/public/projects/macdev"
-  cp "$APP_ICON_DIR/AppIcon1024.png" "$WEBSITE_ROOT/public/projects/macdev/app-icon.png"
+  mkdir -p "$WEBSITE_ROOT/public/projects/portpirate"
+  cp "$APP_ICON_DIR/AppIcon1024.png" "$WEBSITE_ROOT/public/projects/portpirate/app-icon.png"
 fi
 
-echo "Generated MacDev app icon from $SOURCE_PATH"
+echo "Generated PortPirate app icon from $SOURCE_PATH"

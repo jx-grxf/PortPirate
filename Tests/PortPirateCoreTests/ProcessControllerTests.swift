@@ -1,5 +1,5 @@
 import XCTest
-@testable import MacDevCore
+@testable import PortPirateCore
 
 final class ProcessControllerTests: XCTestCase {
   func testStoppingMissingProcessCountsAsAlreadyStopped() throws {

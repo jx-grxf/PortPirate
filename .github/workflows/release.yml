@@ -58,42 +58,42 @@ jobs:
 
       - name: Build DMG
         env:
-          MACDEV_VERSION: ${{ steps.version.outputs.version }}
-          MACDEV_BUILD: ${{ github.run_number }}
-          MACDEV_SPARKLE_PUBLIC_KEY: ${{ secrets.MACDEV_SPARKLE_PUBLIC_KEY }}
+          PORTPIRATE_VERSION: ${{ steps.version.outputs.version }}
+          PORTPIRATE_BUILD: ${{ github.run_number }}
+          PORTPIRATE_SPARKLE_PUBLIC_KEY: ${{ secrets.PORTPIRATE_SPARKLE_PUBLIC_KEY }}
         run: ./script/package_dmg.sh
 
       - name: Build Sparkle assets
         env:
-          MACDEV_VERSION: ${{ steps.version.outputs.version }}
-          MACDEV_BUILD: ${{ github.run_number }}
-          MACDEV_UPDATE_CHANNEL: ${{ steps.version.outputs.channel }}
-          MACDEV_SPARKLE_PUBLIC_KEY: ${{ secrets.MACDEV_SPARKLE_PUBLIC_KEY }}
-          MACDEV_SPARKLE_PRIVATE_KEY: ${{ secrets.MACDEV_SPARKLE_PRIVATE_KEY }}
-          MACDEV_SPARKLE_DOWNLOAD_PREFIX: https://github.com/jx-grxf/MacDev/releases/download/${{ steps.version.outputs.tag }}
+          PORTPIRATE_VERSION: ${{ steps.version.outputs.version }}
+          PORTPIRATE_BUILD: ${{ github.run_number }}
+          PORTPIRATE_UPDATE_CHANNEL: ${{ steps.version.outputs.channel }}
+          PORTPIRATE_SPARKLE_PUBLIC_KEY: ${{ secrets.PORTPIRATE_SPARKLE_PUBLIC_KEY }}
+          PORTPIRATE_SPARKLE_PRIVATE_KEY: ${{ secrets.PORTPIRATE_SPARKLE_PRIVATE_KEY }}
+          PORTPIRATE_SPARKLE_DOWNLOAD_PREFIX: https://github.com/jx-grxf/PortPirate/releases/download/${{ steps.version.outputs.tag }}
         run: ./script/create_sparkle_assets.sh
 
       - name: Verify app signature
-        run: codesign --verify --deep --strict dist/MacDev.app
+        run: codesign --verify --deep --strict dist/PortPirate.app
 
       - name: Verify DMG
         env:
-          MACDEV_VERSION: ${{ steps.version.outputs.version }}
-        run: hdiutil imageinfo "dist/MacDev-${MACDEV_VERSION}.dmg" >/dev/null
+          PORTPIRATE_VERSION: ${{ steps.version.outputs.version }}
+        run: hdiutil imageinfo "dist/PortPirate-${PORTPIRATE_VERSION}.dmg" >/dev/null
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: MacDev-${{ steps.version.outputs.version }}-dmg
-          path: dist/MacDev-${{ steps.version.outputs.version }}.dmg
+          name: PortPirate-${{ steps.version.outputs.version }}-dmg
+          path: dist/PortPirate-${{ steps.version.outputs.version }}.dmg
           if-no-files-found: error
 
       - name: Upload Sparkle artifact
         uses: actions/upload-artifact@v7
         with:
-          name: MacDev-${{ steps.version.outputs.version }}-sparkle
+          name: PortPirate-${{ steps.version.outputs.version }}-sparkle
           path: |
-            dist/sparkle/MacDev-${{ steps.version.outputs.version }}.zip
+            dist/sparkle/PortPirate-${{ steps.version.outputs.version }}.zip
             dist/sparkle/appcast.xml
           if-no-files-found: error
 
@@ -105,20 +105,20 @@ jobs:
           RELEASE_PRERELEASE: ${{ steps.version.outputs.prerelease }}
         run: |
           set -euo pipefail
-          asset="dist/MacDev-${RELEASE_VERSION}.dmg"
-          sparkle_zip="dist/sparkle/MacDev-${RELEASE_VERSION}.zip"
+          asset="dist/PortPirate-${RELEASE_VERSION}.dmg"
+          sparkle_zip="dist/sparkle/PortPirate-${RELEASE_VERSION}.zip"
           appcast="dist/sparkle/appcast.xml"
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" "$asset#MacDev-${RELEASE_VERSION}.dmg" --clobber
-            gh release upload "$RELEASE_TAG" "$sparkle_zip#MacDev-${RELEASE_VERSION}.zip" --clobber
+            gh release upload "$RELEASE_TAG" "$asset#PortPirate-${RELEASE_VERSION}.dmg" --clobber
+            gh release upload "$RELEASE_TAG" "$sparkle_zip#PortPirate-${RELEASE_VERSION}.zip" --clobber
             gh release upload "$RELEASE_TAG" "$appcast#appcast.xml" --clobber
           else
             gh release create "$RELEASE_TAG" \
-              "$asset#MacDev-${RELEASE_VERSION}.dmg" \
-              "$sparkle_zip#MacDev-${RELEASE_VERSION}.zip" \
+              "$asset#PortPirate-${RELEASE_VERSION}.dmg" \
+              "$sparkle_zip#PortPirate-${RELEASE_VERSION}.zip" \
               "$appcast#appcast.xml" \
               --target "$GITHUB_SHA" \
-              --title "MacDev ${RELEASE_VERSION}" \
+              --title "PortPirate ${RELEASE_VERSION}" \
               --notes-file RELEASE_NOTES.md \
               $RELEASE_PRERELEASE
           fi
@@ -132,13 +132,13 @@ jobs:
           beta_tag="beta"
           appcast="dist/sparkle/appcast.xml"
           if gh release view "$beta_tag" >/dev/null 2>&1; then
-            gh release edit "$beta_tag" --target "$GITHUB_SHA" --prerelease --title "MacDev Beta Feed"
+            gh release edit "$beta_tag" --target "$GITHUB_SHA" --prerelease --title "PortPirate Beta Feed"
             gh release upload "$beta_tag" "$appcast#appcast.xml" --clobber
           else
             gh release create "$beta_tag" \
               "$appcast#appcast.xml" \
               --target "$GITHUB_SHA" \
-              --title "MacDev Beta Feed" \
+              --title "PortPirate Beta Feed" \
               --notes "Moving Sparkle beta appcast feed. Install beta builds from versioned prereleases." \
               --prerelease
           fi

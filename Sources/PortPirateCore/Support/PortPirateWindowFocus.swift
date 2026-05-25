@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 
 @MainActor
-public enum MacDevWindowFocus {
+public enum PortPirateWindowFocus {
   public static func activateApp() {
     NSRunningApplication.current.activate(options: [.activateAllWindows])
     NSApplication.shared.activate(ignoringOtherApps: true)

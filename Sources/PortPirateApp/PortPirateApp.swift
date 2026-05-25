@@ -1,8 +1,8 @@
-import MacDevCore
+import PortPirateCore
 import SwiftUI
 
 @main
-struct MacDevApp: App {
+struct PortPirateApp: App {
   @State private var appState = AppState()
 
   var body: some Scene {
@@ -13,7 +13,7 @@ struct MacDevApp: App {
         if appState.showStatusCount, !appState.visibleServers.isEmpty {
           Text("\(appState.visibleServers.count)")
         } else {
-          Text("MacDev")
+          Text("PortPirate")
         }
       } icon: {
         MenuBarGlyph(state: appState.status)
@@ -29,7 +29,7 @@ struct MacDevApp: App {
     }
     .defaultSize(width: 860, height: 560)
     .commands {
-      MacDevCommands(appState: appState)
+      PortPirateCommands(appState: appState)
     }
 
     Settings {
@@ -40,21 +40,21 @@ struct MacDevApp: App {
   }
 }
 
-private struct MacDevCommands: Commands {
+private struct PortPirateCommands: Commands {
   let appState: AppState
   @Environment(\.openWindow) private var openWindow
 
   var body: some Commands {
-    CommandMenu("MacDev") {
+    CommandMenu("PortPirate") {
       Button("Refresh") {
         Task { await appState.refresh() }
       }
       .keyboardShortcut("r")
 
       Button("Runtime Browser") {
-        MacDevWindowFocus.activateApp()
+        PortPirateWindowFocus.activateApp()
         openWindow(id: "runtime-browser")
-        MacDevWindowFocus.bringWindowForward(title: "Runtime Browser")
+        PortPirateWindowFocus.bringWindowForward(title: "Runtime Browser")
       }
       .keyboardShortcut("b")
 
@@ -93,6 +93,6 @@ private struct MenuBarGlyph: View {
       }
     }
     .frame(width: 18, height: 18)
-    .accessibilityLabel("MacDev \(state.title)")
+    .accessibilityLabel("PortPirate \(state.title)")
   }
 }

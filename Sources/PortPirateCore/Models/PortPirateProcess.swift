@@ -1,6 +1,6 @@
 import Foundation
 
-public struct MacDevProcess: Identifiable, Hashable, Codable, Sendable {
+public struct PortPirateProcess: Identifiable, Hashable, Codable, Sendable {
   public let id: Int32
   public let parentID: Int32?
   public let user: String?

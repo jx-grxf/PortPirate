@@ -18,7 +18,7 @@ public enum ProcessControllerError: Error, LocalizedError {
     case .failedToStop(let pid, let code):
       "Could not stop PID \(pid). errno \(code)."
     case .unsafeProcess(let pid, let reason):
-      "MacDev refused to stop PID \(pid): \(reason)"
+      "PortPirate refused to stop PID \(pid): \(reason)"
     }
   }
 }

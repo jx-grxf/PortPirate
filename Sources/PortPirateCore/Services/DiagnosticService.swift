@@ -8,7 +8,7 @@ public enum DiagnosticService {
       return DiagnosticResult(
         port: port,
         title: "Port \(port) is free",
-        cause: "MacDev did not find a process listening on localhost or any TCP address for this port.",
+        cause: "PortPirate did not find a process listening on localhost or any TCP address for this port.",
         recommendedAction: "Start the expected dev server or refresh if it was launched just now.",
         server: nil,
         severity: .idle

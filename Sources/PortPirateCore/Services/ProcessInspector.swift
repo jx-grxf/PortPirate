@@ -1,8 +1,8 @@
 import Foundation
 
 public enum ProcessInspectorParser {
-  public static func parsePS(_ output: String) -> [Int32: MacDevProcess] {
-    var processes: [Int32: MacDevProcess] = [:]
+  public static func parsePS(_ output: String) -> [Int32: PortPirateProcess] {
+    var processes: [Int32: PortPirateProcess] = [:]
 
     for line in output.split(whereSeparator: \.isNewline) {
       let parts = line.split(separator: " ", maxSplits: 3, omittingEmptySubsequences: true)
@@ -16,7 +16,7 @@ public enum ProcessInspectorParser {
 
       let user = String(parts[2])
       let command = String(parts[3])
-      processes[pid] = MacDevProcess(
+      processes[pid] = PortPirateProcess(
         id: pid,
         parentID: parentID,
         user: user,
@@ -63,7 +63,7 @@ public actor ProcessInspector {
     )
   }
 
-  public func inspect(processIDs: Set<Int32>) async -> [Int32: MacDevProcess] {
+  public func inspect(processIDs: Set<Int32>) async -> [Int32: PortPirateProcess] {
     guard !processIDs.isEmpty else { return [:] }
 
     let idList = processIDs.sorted().map(String.init).joined(separator: ",")
@@ -78,7 +78,7 @@ public actor ProcessInspector {
     let currentDirectories = await currentDirectories(for: processIDs)
     for processID in processIDs {
       guard let process = processes[processID] else { continue }
-      processes[processID] = MacDevProcess(
+      processes[processID] = PortPirateProcess(
         id: process.id,
         parentID: process.parentID,
         user: process.user,
