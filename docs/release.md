@@ -15,6 +15,7 @@ Release notes should stay useful for people deciding whether to download the app
 ## Local Preflight
 
 ```bash
+./script/audit_release_identity.sh
 swift test
 ./script/build_and_run.sh build-only
 codesign --verify --deep --strict dist/PortPirate.app
@@ -29,6 +30,11 @@ PORTPIRATE_VERSION=0.2.2 \
 PORTPIRATE_SPARKLE_PUBLIC_KEY="<public ed25519 key>" \
 PORTPIRATE_SPARKLE_PRIVATE_KEY="<private ed25519 key>" \
 ./script/create_sparkle_assets.sh
+
+./script/verify_appcast.swift \
+  dist/sparkle/appcast.xml \
+  https://github.com/jx-grxf/PortPirate/releases/download/v0.2.2/PortPirate-0.2.2.zip \
+  stable
 ```
 
 Use `PORTPIRATE_UPDATE_CHANNEL=beta` for prerelease appcast entries.
@@ -60,10 +66,16 @@ Required release secrets:
 - `WEBSITE_DEPLOY_HOOK_URL`: Vercel deploy hook for `johannesgrof.me`.
 - `PORTPIRATE_SPARKLE_PUBLIC_KEY`: EdDSA public key embedded in `Info.plist`.
 - `PORTPIRATE_SPARKLE_PRIVATE_KEY`: EdDSA private key passed to `generate_appcast`.
+- `PORTPIRATE_SIGN_IDENTITY`: Developer ID Application signing identity available on the runner.
+- `PORTPIRATE_NOTARY_ENABLED`: Set to `true` to require notarization in the release workflow.
+- `PORTPIRATE_NOTARY_KEYCHAIN_PROFILE`: Optional notarytool keychain profile. If omitted, the Apple ID secrets below are required when notarization is enabled.
+- `PORTPIRATE_NOTARY_APPLE_ID`: Apple ID used by `xcrun notarytool`.
+- `PORTPIRATE_NOTARY_TEAM_ID`: Apple developer team ID.
+- `PORTPIRATE_NOTARY_PASSWORD`: App-specific password or notarytool-compatible password.
 
 ## Distribution Notes
 
-Current preview builds are ad-hoc signed for bundle integrity. Public end-user distribution should move to Developer ID signing, hardened runtime, notarization, and stapling before the app is marketed outside GitHub preview releases.
+Current preview builds are ad-hoc signed for bundle integrity unless the release runner has a Developer ID identity configured through `PORTPIRATE_SIGN_IDENTITY`. Public end-user distribution should enable Developer ID signing plus `PORTPIRATE_NOTARY_ENABLED=true` so the workflow submits the DMG with `xcrun notarytool`, staples it, and validates it before upload.
 
 ## Manual Verification Checklist
 
@@ -74,5 +86,6 @@ Current preview builds are ad-hoc signed for bundle integrity. Public end-user d
 - The website deploy hook step finishes successfully.
 - The DMG opens with `hdiutil imageinfo`.
 - The app bundle verifies with `codesign --verify --deep --strict`.
+- `xcrun stapler validate dist/PortPirate-<version>.dmg` passes when notarization is enabled.
 - `appcast.xml` contains no `sparkle:channel` for stable releases and `sparkle:channel="beta"` for beta prereleases.
 - README download links point at the latest release.
