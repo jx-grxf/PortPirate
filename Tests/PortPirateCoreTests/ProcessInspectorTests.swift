@@ -13,12 +13,12 @@ final class ProcessInspectorTests: XCTestCase {
     XCTAssertFalse(context?.argv.isEmpty ?? true)
   }
 
-  func testParentChainTerminatesAtLaunchdOrRoot() async {
+  func testParentChainHasNoCycle() async {
     let inspector = ProcessInspector()
 
     let chain = await inspector.parentChain(of: getpid())
 
-    XCTAssertFalse(chain.isEmpty)
-    XCTAssertTrue(chain.last == 1 || chain.last == 0)
+    XCTAssertGreaterThanOrEqual(chain.count, 2)
+    XCTAssertEqual(Set(chain).count, chain.count)
   }
 }

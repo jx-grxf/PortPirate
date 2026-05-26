@@ -108,7 +108,7 @@ public actor ProcessInspector {
     )
   }
 
-  public func parentChain(of pid: pid_t, limit: Int = 12) -> [pid_t] {
+  public func parentChain(of pid: pid_t, limit: Int = 32) -> [pid_t] {
     guard pid > 0 else { return [pid] }
 
     var chain = [pid]
