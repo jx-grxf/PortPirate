@@ -13,7 +13,7 @@ Every discovered listener carries a `ProcessOwner` value resolved from three sig
 
 1. **Environment variables** of the process (whitelisted prefixes: `CLAUDE_*`, `CURSOR_*`, `CODEX_*`, `OPENCODE_*`, `AIDER_*`, `GEMINI_CLI_*`, `COPILOT_*`, `AUGMENT_*`, `QWEN_CODE_*`, plus general `ANTHROPIC_*`, `OPENAI_*`, `npm_*`, `VSCODE_*`, `TERM_PROGRAM`). Session IDs are extracted from `<PREFIX>SESSION_ID` keys.
 2. **`argv[0]` basename** of the process (not full command-line substring — substring matching produces false positives on paths like `/Users/claude/...`).
-3. **Parent-executable basenames** walked through the PID chain (up to depth 32). VS Code and Code Insiders map to a distinct `vsCodeAgent` kind so we can present them without overclaiming "Cursor".
+3. **Parent-executable basenames** walked through the PID chain (up to depth 32). VS Code and Code Insiders are deliberately *not* mapped to an AI-agent kind — they are editors, not agents. Copilot in VS Code surfaces only when its own process (`copilot`, `copilot-language-server`, etc.) appears in the chain, or when `COPILOT_*` env vars are set.
 
 When none match but the parent is an interactive shell (`bash`, `zsh`, `fish`), the owner is `.manual`. Otherwise `.unknown`.
 

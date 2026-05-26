@@ -74,13 +74,13 @@ final class AgentDetectorTests: XCTestCase {
     XCTAssertEqual(detector.classify(context), .aiAgent(kind: .codex, sessionID: nil))
   }
 
-  func testClassifiesVSCodeAgentFromParentExecutable() {
+  func testVSCodeEditorParentIsNotAnAIAgent() {
     let detector = AgentDetector { pid in
       pid == 42 ? "code-insiders" : nil
     }
     let context = makeContext(ppidChain: [100, 42, 1])
 
-    XCTAssertEqual(detector.classify(context), .aiAgent(kind: .vsCodeAgent, sessionID: nil))
+    XCTAssertEqual(detector.classify(context), .unknown)
   }
 
   func testClassifiesManualFromInteractiveShellParent() {

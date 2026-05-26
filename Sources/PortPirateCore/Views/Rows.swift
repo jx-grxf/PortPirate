@@ -199,7 +199,6 @@ extension AgentKind {
     case .copilot: return "Copilot"
     case .augment: return "Augment"
     case .qwenCode: return "Qwen"
-    case .vsCodeAgent: return "VS Code"
     case .other: return "Agent"
     }
   }
@@ -216,7 +215,6 @@ extension AgentKind {
     case .copilot: return .mint
     case .augment: return .yellow
     case .qwenCode: return .red
-    case .vsCodeAgent: return .blue
     case .other: return .gray
     }
   }

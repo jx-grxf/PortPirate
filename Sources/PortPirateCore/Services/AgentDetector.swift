@@ -103,7 +103,6 @@ public struct AgentDetector: Sendable {
       if name.contains("claude") { return .claudeCode }
       if name.contains("cursor") { return .cursor }
       if name.contains("codex") { return .codex }
-      if name == "code-insiders" || name == "code" { return .vsCodeAgent }
       if name.contains("windsurf") { return .windsurf }
       if name.contains("opencode") { return .opencode }
       if name.contains("gemini") { return .gemini }

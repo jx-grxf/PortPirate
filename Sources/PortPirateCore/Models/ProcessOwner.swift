@@ -17,6 +17,5 @@ public enum AgentKind: String, Codable, Sendable {
   case copilot
   case augment
   case qwenCode
-  case vsCodeAgent
   case other
 }
