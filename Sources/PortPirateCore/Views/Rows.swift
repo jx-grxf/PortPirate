@@ -37,6 +37,89 @@ struct EmptyStateRow: View {
   }
 }
 
+struct StackCardView: View {
+  @Bindable var appState: AppState
+  let stack: WorkspaceStack
+  @State private var isExpanded: Bool = true
+  @State private var showingStopConfirmation = false
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 0) {
+      DisclosureGroup(isExpanded: $isExpanded.animation(Theme.expand)) {
+        VStack(spacing: Theme.s2) {
+          ForEach(stack.servers) { server in
+            ServerRowView(appState: appState, server: server)
+          }
+        }
+        .padding(.top, Theme.s2)
+      } label: {
+        header
+      }
+    }
+    .padding(Theme.s3)
+    .glassCard()
+    .confirmationDialog(
+      "Stop \(stack.servers.count) services in \(stack.name)?",
+      isPresented: $showingStopConfirmation,
+      titleVisibility: .visible
+    ) {
+      Button("Stop all", role: .destructive) {
+        Task { await appState.stopStack(stack) }
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text(stack.servers.map { ":\($0.port)" }.joined(separator: ", "))
+    }
+  }
+
+  private var header: some View {
+    HStack(spacing: Theme.s2) {
+      StatusDot(stack.status)
+      VStack(alignment: .leading, spacing: 1) {
+        Text(stack.name)
+          .font(.callout)
+          .bold()
+          .lineLimit(1)
+        Text(subtitle)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+      }
+      Spacer(minLength: Theme.s2)
+      if stack.hasMixedBranches {
+        Image(systemName: "exclamationmark.triangle.fill")
+          .foregroundStyle(.yellow)
+          .font(.caption)
+          .help("Services in this stack are on different git branches")
+      }
+      Button("Stop all", systemImage: "stop.circle") {
+        if appState.confirmForceKill {
+          showingStopConfirmation = true
+        } else {
+          Task { await appState.stopStack(stack) }
+        }
+      }
+      .labelStyle(.iconOnly)
+      .buttonStyle(.borderless)
+      .help("Stop all services in \(stack.name)")
+    }
+    .contentShape(.rect)
+  }
+
+  private var subtitle: String {
+    var parts = ["\(stack.servers.count) services"]
+    if let branch = stack.branch {
+      parts.append(branch)
+    } else if stack.hasMixedBranches {
+      parts.append("mixed branches")
+    }
+    if stack.isWorktree {
+      parts.append("worktree")
+    }
+    return parts.joined(separator: " · ")
+  }
+}
+
 struct ServerRowView: View {
   @Bindable var appState: AppState
   let server: ListeningServer
@@ -62,8 +145,11 @@ struct ServerRowView: View {
           Text(":\(server.displayPort)")
             .font(.callout.monospacedDigit())
             .foregroundStyle(.secondary)
+          if let owner = OwnerPresentation(server: server) {
+            OwnerBadge(owner: owner)
+          }
         }
-        Text(server.workspaceName)
+        Text(secondaryLine)
           .font(.caption)
           .foregroundStyle(.secondary)
           .lineLimit(1)
@@ -123,6 +209,153 @@ struct ServerRowView: View {
     } else {
       Task { await appState.stop(server: server, force: true) }
     }
+  }
+
+  private var secondaryLine: String {
+    var parts: [String] = []
+    if let git = server.process?.gitContext {
+      var label = git.repoRoot.lastPathComponent
+      if let branch = git.branch, !branch.isEmpty {
+        label += " · \(branch)"
+      }
+      if git.isWorktree {
+        label += " · worktree"
+      }
+      parts.append(label)
+    } else {
+      parts.append(server.workspaceName)
+    }
+    if let age = RelativeAge.short(from: server.process?.startedAt) {
+      parts.append(age)
+    }
+    return parts.joined(separator: "  ·  ")
+  }
+}
+
+struct OwnerPresentation: Equatable {
+  let label: String
+  let tooltip: String
+  let tint: Color
+  let source: DetectionSource
+
+  init?(server: ListeningServer) {
+    guard let owner = server.process?.owner,
+          case .aiAgent(let kind, let sessionID, let source) = owner else {
+      return nil
+    }
+    self.label = kind.displayName
+    self.tint = kind.tint
+    self.source = source
+    var tooltipParts: [String] = ["\(kind.displayName) · matched via \(source.tooltipPhrase)"]
+    if let sessionID, !sessionID.isEmpty {
+      tooltipParts.append("session \(sessionID)")
+    }
+    if let cwd = server.process?.currentDirectory {
+      tooltipParts.append(cwd)
+    }
+    self.tooltip = tooltipParts.joined(separator: " · ")
+  }
+}
+
+struct OwnerBadge: View {
+  let owner: OwnerPresentation
+
+  var body: some View {
+    HStack(spacing: 3) {
+      if owner.source == .argv {
+        Text("~").font(.caption2.weight(.bold)).foregroundStyle(owner.tint.opacity(0.8))
+      }
+      Text(owner.label)
+        .font(.caption2.weight(.semibold))
+        .foregroundStyle(owner.tint)
+    }
+    .padding(.horizontal, 6)
+    .padding(.vertical, 1)
+    .background(fillStyle, in: Capsule())
+    .overlay(Capsule().stroke(owner.tint.opacity(strokeOpacity), style: strokeStyle))
+    .help(owner.tooltip)
+  }
+
+  private var fillStyle: AnyShapeStyle {
+    switch owner.source {
+    case .env: return AnyShapeStyle(owner.tint.opacity(0.22))
+    case .parentChain: return AnyShapeStyle(owner.tint.opacity(0.08))
+    case .argv: return AnyShapeStyle(Color.clear)
+    }
+  }
+
+  private var strokeOpacity: Double {
+    switch owner.source {
+    case .env: return 0.35
+    case .parentChain: return 0.5
+    case .argv: return 0.6
+    }
+  }
+
+  private var strokeStyle: StrokeStyle {
+    switch owner.source {
+    case .env: return StrokeStyle(lineWidth: 0.5)
+    case .parentChain: return StrokeStyle(lineWidth: 0.7)
+    case .argv: return StrokeStyle(lineWidth: 0.7, dash: [2, 2])
+    }
+  }
+}
+
+extension DetectionSource {
+  var tooltipPhrase: String {
+    switch self {
+    case .env: return "agent env var (high confidence)"
+    case .parentChain: return "parent process chain"
+    case .argv: return "argv basename (likely)"
+    }
+  }
+}
+
+extension AgentKind {
+  var displayName: String {
+    switch self {
+    case .claudeCode: return "Claude"
+    case .cursor: return "Cursor"
+    case .codex: return "Codex"
+    case .windsurf: return "Windsurf"
+    case .aider: return "Aider"
+    case .opencode: return "opencode"
+    case .gemini: return "Gemini"
+    case .copilot: return "Copilot"
+    case .augment: return "Augment"
+    case .qwenCode: return "Qwen"
+    case .other: return "Agent"
+    }
+  }
+
+  var tint: Color {
+    switch self {
+    case .claudeCode: return .orange
+    case .cursor: return .purple
+    case .codex: return .green
+    case .windsurf: return .teal
+    case .aider: return .brown
+    case .opencode: return .indigo
+    case .gemini: return .pink
+    case .copilot: return .mint
+    case .augment: return .yellow
+    case .qwenCode: return .red
+    case .other: return .gray
+    }
+  }
+}
+
+enum RelativeAge {
+  static func short(from date: Date?, now: Date = Date()) -> String? {
+    guard let date else { return nil }
+    let seconds = max(0, Int(now.timeIntervalSince(date)))
+    if seconds < 60 { return "\(seconds)s" }
+    let minutes = seconds / 60
+    if minutes < 60 { return "\(minutes)m" }
+    let hours = minutes / 60
+    if hours < 24 { return "\(hours)h" }
+    let days = hours / 24
+    return "\(days)d"
   }
 }
 

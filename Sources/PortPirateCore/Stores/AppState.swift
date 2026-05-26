@@ -14,6 +14,9 @@ public final class AppState {
   public var diagnosisPortText = ""
   public var isRefreshing = false
   public var errorMessage: String?
+  public var filterAIAgentsOnly = false
+  public var filterStaleOnly = false
+  public static let staleThreshold: TimeInterval = 30 * 60
   public var notificationAuthorization: PortPirateNotificationAuthorization = .unknown
 
   public var refreshInterval: Double {
@@ -121,8 +124,62 @@ public final class AppState {
     servers.filter(\.isPrimaryRuntime)
   }
 
+  public var visibleDeveloperServers: [ListeningServer] {
+    developerServers.filter(passesActiveFilters)
+  }
+
+  public var groupedDeveloperServers: StackGrouper.GroupedServers {
+    StackGrouper.group(visibleDeveloperServers)
+  }
+
+  public var developerStacks: [WorkspaceStack] {
+    groupedDeveloperServers.stacks
+  }
+
+  public var ungroupedDeveloperServers: [ListeningServer] {
+    groupedDeveloperServers.ungrouped
+  }
+
+  public func stopStack(_ stack: WorkspaceStack) async {
+    for server in stack.servers where server.isPrimaryRuntime {
+      await stop(server: server, force: false)
+    }
+  }
+
+  public var hasAgentDetectedServers: Bool {
+    developerServers.contains { AppState.isAIAgent($0) }
+  }
+
+  public var hasStaleServers: Bool {
+    developerServers.contains { AppState.isStale($0) }
+  }
+
+  public var hasActiveFilter: Bool {
+    filterAIAgentsOnly || filterStaleOnly
+  }
+
+  private func passesActiveFilters(_ server: ListeningServer) -> Bool {
+    if filterAIAgentsOnly, !AppState.isAIAgent(server) { return false }
+    if filterStaleOnly, !AppState.isStale(server) { return false }
+    return true
+  }
+
+  public nonisolated static func isAIAgent(_ server: ListeningServer) -> Bool {
+    if case .aiAgent = server.process?.owner { return true }
+    return false
+  }
+
+  public nonisolated static func isStale(_ server: ListeningServer, now: Date = Date()) -> Bool {
+    guard let startedAt = server.process?.startedAt else { return false }
+    return now.timeIntervalSince(startedAt) >= staleThreshold
+  }
+
   public var backgroundServers: [ListeningServer] {
-    servers.filter { !$0.isAppleService && !$0.isPrimaryRuntime }
+    servers.filter { !$0.isAppleService && !$0.isEditorHelper && !$0.isPrimaryRuntime }
+  }
+
+  public var editorHelperServers: [ListeningServer] {
+    servers.filter(\.isEditorHelper)
   }
 
   public var appleServiceServers: [ListeningServer] {

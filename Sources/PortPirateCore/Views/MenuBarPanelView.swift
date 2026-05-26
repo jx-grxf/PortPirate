@@ -6,6 +6,7 @@ public struct MenuBarPanelView: View {
   @Environment(\.openSettings) private var openSettings
   @State private var isAppleServicesExpanded = false
   @State private var isBackgroundExpanded = false
+  @State private var isEditorHelpersExpanded = false
   @State private var isToolsExpanded = false
 
   public init(appState: AppState) {
@@ -26,6 +27,7 @@ public struct MenuBarPanelView: View {
           }
           serverSection
           backgroundSection
+          editorHelpersSection
           appleServicesSection
           toolsSection
         }
@@ -108,13 +110,54 @@ public struct MenuBarPanelView: View {
       if appState.developerServers.isEmpty {
         EmptyStateRow(title: "No listening dev ports", subtitle: "Start a server and PortPirate will pick it up.")
       } else {
-        ForEach(appState.developerServers.prefix(8)) { server in
-          ServerRowView(appState: appState, server: server)
+        filterChips
+        let grouped = appState.groupedDeveloperServers
+        if grouped.stacks.isEmpty && grouped.ungrouped.isEmpty {
+          EmptyStateRow(
+            title: "No matches for current filter",
+            subtitle: appState.filterAIAgentsOnly && appState.filterStaleOnly
+              ? "No AI-agent processes older than 30 minutes."
+              : appState.filterAIAgentsOnly
+                ? "No AI-agent processes detected right now."
+                : "No processes older than 30 minutes."
+          )
+        } else {
+          ForEach(grouped.stacks) { stack in
+            StackCardView(appState: appState, stack: stack)
+          }
+          ForEach(grouped.ungrouped.prefix(8)) { server in
+            ServerRowView(appState: appState, server: server)
+          }
         }
       }
 
       if let diagnostic = appState.diagnosticResult {
         DiagnosticCard(result: diagnostic)
+      }
+    }
+  }
+
+  @ViewBuilder
+  private var filterChips: some View {
+    let showAgent = appState.hasAgentDetectedServers || appState.filterAIAgentsOnly
+    let showStale = appState.hasStaleServers || appState.filterStaleOnly
+    if showAgent || showStale {
+      HStack(spacing: Theme.s2) {
+        if showAgent {
+          FilterChip(
+            label: "AI agents",
+            systemImage: "sparkles",
+            isOn: $appState.filterAIAgentsOnly
+          )
+        }
+        if showStale {
+          FilterChip(
+            label: "Stale >30m",
+            systemImage: "clock.badge.exclamationmark",
+            isOn: $appState.filterStaleOnly
+          )
+        }
+        Spacer()
       }
     }
   }
@@ -133,6 +176,24 @@ public struct MenuBarPanelView: View {
         .padding(.top, Theme.s2)
       } label: {
         sectionLabel("Other listeners", systemImage: "app.connected.to.app.below.fill", count: backgroundServers.count)
+      }
+    }
+  }
+
+  @ViewBuilder
+  private var editorHelpersSection: some View {
+    let helpers = appState.editorHelperServers
+
+    if !helpers.isEmpty {
+      DisclosureGroup(isExpanded: $isEditorHelpersExpanded.animation(Theme.expand)) {
+        VStack(spacing: Theme.s2) {
+          ForEach(helpers.prefix(20)) { server in
+            ServerRowView(appState: appState, server: server, allowsStop: false)
+          }
+        }
+        .padding(.top, Theme.s2)
+      } label: {
+        sectionLabel("Editor helpers", systemImage: "chevron.left.forwardslash.chevron.right", count: helpers.count)
       }
     }
   }
@@ -281,12 +342,44 @@ public struct MenuBarPanelView: View {
       return errorMessage
     }
     let count = appState.developerServers.count
-    let backgroundCount = appState.backgroundServers.count
+    let otherCount = appState.backgroundServers.count + appState.editorHelperServers.count
     let warnings = appState.warningCount
-    let listenerText = backgroundCount == 0 ? "" : ", \(backgroundCount) other"
+    let listenerText = otherCount == 0 ? "" : ", \(otherCount) other"
     if count == 0 { return "No dev runtimes\(listenerText)" }
     if warnings == 0 { return "\(count) active\(listenerText)" }
     return "\(count) active, \(warnings) warning\(warnings == 1 ? "" : "s")\(listenerText)"
+  }
+}
+
+struct FilterChip: View {
+  let label: String
+  let systemImage: String
+  @Binding var isOn: Bool
+
+  var body: some View {
+    Button {
+      isOn.toggle()
+    } label: {
+      HStack(spacing: 4) {
+        Image(systemName: systemImage)
+        Text(label)
+      }
+      .font(.caption.weight(.semibold))
+      .foregroundStyle(isOn ? Color.accentColor : .secondary)
+      .padding(.horizontal, 8)
+      .padding(.vertical, 3)
+      .background(
+        Capsule().fill(isOn ? Color.accentColor.opacity(0.16) : Color.primary.opacity(0.04))
+      )
+      .overlay(
+        Capsule().strokeBorder(
+          isOn ? Color.accentColor.opacity(0.5) : Color.primary.opacity(0.08),
+          lineWidth: 0.5
+        )
+      )
+    }
+    .buttonStyle(.plain)
+    .help(isOn ? "Showing only \(label)" : "Filter: \(label)")
   }
 }
 
