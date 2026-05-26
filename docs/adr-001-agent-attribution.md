@@ -70,4 +70,9 @@ Detached services (brew, docker, launchd-spawned) are deliberately not given heu
 
 `script/audit_agent_env.sh` lists known agent CLIs on the host and dumps env vars matching the whitelist prefixes, so the detection rules can be verified per agent on real machines rather than guessed.
 
-Verified env signals on Claude Code 2.1.150 (2026-05-26): `CLAUDECODE=1`, `CLAUDE_CODE_SESSION_ID`, `CLAUDE_CODE_ENTRYPOINT`, `CLAUDE_CODE_EXECPATH`, `AI_AGENT=claude-code_*`. Other agents need the same verification before their env-based rules can be considered proven.
+Verified agents (env-based detection confirmed on real sessions, 2026-05-26):
+
+- **Claude Code 2.1.150** — exports `CLAUDECODE=1`, `CLAUDE_CODE_SESSION_ID`, `CLAUDE_CODE_ENTRYPOINT`, `CLAUDE_CODE_EXECPATH`, `AI_AGENT=claude-code_*`.
+- **Cursor** — exports `CURSOR_*` markers to subprocess env. Confirmed via stealth test: Cursor was given a generic "spin up a preview server" task with no mention of PortPirate or attribution; the spawned Python `http.server` showed up in PortPirate with a filled (env-source) Cursor badge without any priming.
+
+Other agents (Codex, Aider, opencode, Gemini, Copilot, Augment, Windsurf, Qwen) still need the same verification before their env-based rules can be considered proven; parent-chain and argv detection remains the fallback.
