@@ -1,7 +1,13 @@
 import Foundation
 
+public enum DetectionSource: String, Codable, Sendable, CaseIterable {
+  case env
+  case parentChain
+  case argv
+}
+
 public enum ProcessOwner: Equatable, Hashable, Codable, Sendable {
-  case aiAgent(kind: AgentKind, sessionID: String?)
+  case aiAgent(kind: AgentKind, sessionID: String?, source: DetectionSource)
   case manual
   case unknown
 }

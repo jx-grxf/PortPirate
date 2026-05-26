@@ -3,7 +3,7 @@ import XCTest
 
 final class AppStateFiltersTests: XCTestCase {
   func testIsAIAgentDetectsClassifiedOwners() {
-    let agent = makeServer(processID: 1, owner: .aiAgent(kind: .claudeCode, sessionID: nil))
+    let agent = makeServer(processID: 1, owner: .aiAgent(kind: .claudeCode, sessionID: nil, source: .env))
     let manual = makeServer(processID: 2, owner: .manual)
     let unknown = makeServer(processID: 3, owner: .unknown)
 
@@ -35,15 +35,17 @@ final class AppStateFiltersTests: XCTestCase {
   func testOwnerPresentationOnlyExistsForAIAgents() {
     let agentServer = makeServer(
       processID: 1,
-      owner: .aiAgent(kind: .cursor, sessionID: "abc"),
+      owner: .aiAgent(kind: .cursor, sessionID: "abc", source: .parentChain),
       currentDirectory: "/Users/me/repo"
     )
     let manualServer = makeServer(processID: 2, owner: .manual)
 
     let presentation = OwnerPresentation(server: agentServer)
     XCTAssertEqual(presentation?.label, "Cursor")
+    XCTAssertEqual(presentation?.source, .parentChain)
     XCTAssertTrue(presentation?.tooltip.contains("session abc") ?? false)
     XCTAssertTrue(presentation?.tooltip.contains("/Users/me/repo") ?? false)
+    XCTAssertTrue(presentation?.tooltip.contains("parent process chain") ?? false)
 
     XCTAssertNil(OwnerPresentation(server: manualServer))
   }

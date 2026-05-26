@@ -243,7 +243,11 @@ public actor ProcessInspector {
 
   private static func filteredEnvironment(_ environment: [String: String]) -> [String: String] {
     environment.filter { key, _ in
-      key.hasPrefix("CLAUDE_")
+      key == "CLAUDECODE"
+        || key == "AI_AGENT"
+        || key == "AUGMENT_AGENT"
+        || key == "TERM_PROGRAM"
+        || key.hasPrefix("CLAUDE_")
         || key.hasPrefix("CURSOR_")
         || key.hasPrefix("CODEX_")
         || key.hasPrefix("OPENCODE_")
@@ -256,7 +260,6 @@ public actor ProcessInspector {
         || key.hasPrefix("QWEN_CODE_")
         || key.hasPrefix("npm_")
         || key.hasPrefix("VSCODE_")
-        || key == "TERM_PROGRAM"
     }
   }
 

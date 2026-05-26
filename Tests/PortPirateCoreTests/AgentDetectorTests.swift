@@ -2,7 +2,7 @@ import XCTest
 @testable import PortPirateCore
 
 final class AgentDetectorTests: XCTestCase {
-  func testClassifiesClaudeCodeFromEnvironment() {
+  func testClassifiesClaudeCodeFromSessionEnv() {
     let detector = AgentDetector(parentExecutableName: { _ in nil })
     let context = makeContext(
       envSubset: [
@@ -13,7 +13,27 @@ final class AgentDetectorTests: XCTestCase {
 
     XCTAssertEqual(
       detector.classify(context),
-      .aiAgent(kind: .claudeCode, sessionID: "session-123")
+      .aiAgent(kind: .claudeCode, sessionID: "session-123", source: .env)
+    )
+  }
+
+  func testClassifiesClaudeCodeFromMarkerEnvWithoutSessionID() {
+    let detector = AgentDetector(parentExecutableName: { _ in nil })
+    let context = makeContext(envSubset: ["CLAUDECODE": "1"])
+
+    XCTAssertEqual(
+      detector.classify(context),
+      .aiAgent(kind: .claudeCode, sessionID: nil, source: .env)
+    )
+  }
+
+  func testClassifiesClaudeCodeFromAIAgentEnv() {
+    let detector = AgentDetector(parentExecutableName: { _ in nil })
+    let context = makeContext(envSubset: ["AI_AGENT": "claude-code_2-1-150_agent"])
+
+    XCTAssertEqual(
+      detector.classify(context),
+      .aiAgent(kind: .claudeCode, sessionID: nil, source: .env)
     )
   }
 
@@ -21,7 +41,7 @@ final class AgentDetectorTests: XCTestCase {
     let detector = AgentDetector(parentExecutableName: { _ in nil })
     let context = makeContext(argv: ["/usr/local/bin/node", "cursor-agent", "--stdio"])
 
-    XCTAssertEqual(detector.classify(context), .aiAgent(kind: .cursor, sessionID: nil))
+    XCTAssertEqual(detector.classify(context), .aiAgent(kind: .cursor, sessionID: nil, source: .argv))
   }
 
   func testClassifiesAdditionalAgentsFromEnvironment() {
@@ -29,15 +49,15 @@ final class AgentDetectorTests: XCTestCase {
 
     XCTAssertEqual(
       detector.classify(makeContext(envSubset: ["OPENCODE_CONFIG": "/tmp/opencode.json"])),
-      .aiAgent(kind: .opencode, sessionID: nil)
+      .aiAgent(kind: .opencode, sessionID: nil, source: .env)
     )
     XCTAssertEqual(
       detector.classify(makeContext(envSubset: ["GEMINI_CLI_SURFACE": "terminal"])),
-      .aiAgent(kind: .gemini, sessionID: nil)
+      .aiAgent(kind: .gemini, sessionID: nil, source: .env)
     )
     XCTAssertEqual(
       detector.classify(makeContext(envSubset: ["AUGMENT_AGENT": "1"])),
-      .aiAgent(kind: .augment, sessionID: nil)
+      .aiAgent(kind: .augment, sessionID: nil, source: .env)
     )
   }
 
@@ -46,15 +66,15 @@ final class AgentDetectorTests: XCTestCase {
 
     XCTAssertEqual(
       detector.classify(makeContext(argv: ["/opt/homebrew/bin/opencode", "run"])),
-      .aiAgent(kind: .opencode, sessionID: nil)
+      .aiAgent(kind: .opencode, sessionID: nil, source: .argv)
     )
     XCTAssertEqual(
       detector.classify(makeContext(argv: ["npx", "@google/gemini-cli"])),
-      .aiAgent(kind: .gemini, sessionID: nil)
+      .aiAgent(kind: .gemini, sessionID: nil, source: .argv)
     )
     XCTAssertEqual(
       detector.classify(makeContext(argv: ["/usr/local/bin/auggie", "--print"])),
-      .aiAgent(kind: .augment, sessionID: nil)
+      .aiAgent(kind: .augment, sessionID: nil, source: .argv)
     )
   }
 
@@ -71,7 +91,23 @@ final class AgentDetectorTests: XCTestCase {
     }
     let context = makeContext(ppidChain: [100, 42, 1])
 
-    XCTAssertEqual(detector.classify(context), .aiAgent(kind: .codex, sessionID: nil))
+    XCTAssertEqual(
+      detector.classify(context),
+      .aiAgent(kind: .codex, sessionID: nil, source: .parentChain)
+    )
+  }
+
+  func testEnvSourceTakesPrecedenceOverArgv() {
+    let detector = AgentDetector(parentExecutableName: { _ in nil })
+    let context = makeContext(
+      argv: ["/usr/local/bin/aider"],
+      envSubset: ["CLAUDECODE": "1"]
+    )
+
+    XCTAssertEqual(
+      detector.classify(context),
+      .aiAgent(kind: .claudeCode, sessionID: nil, source: .env)
+    )
   }
 
   func testVSCodeEditorParentIsNotAnAIAgent() {

@@ -19,12 +19,12 @@ public struct AgentDetector: Sendable {
     }
 
     if let kind = kindFromArguments(context.argv) {
-      return .aiAgent(kind: kind, sessionID: nil)
+      return .aiAgent(kind: kind, sessionID: nil, source: .argv)
     }
 
     let parentNames = context.ppidChain.dropFirst().compactMap(parentExecutableName)
     if let kind = kindFromParentExecutableNames(parentNames) {
-      return .aiAgent(kind: kind, sessionID: nil)
+      return .aiAgent(kind: kind, sessionID: nil, source: .parentChain)
     }
 
     if parentNames.contains(where: isInteractiveShell) {
@@ -35,40 +35,46 @@ public struct AgentDetector: Sendable {
   }
 
   private func ownerFromEnvironment(_ environment: [String: String]) -> ProcessOwner? {
-    if environment.keys.contains(where: { $0.hasPrefix("CLAUDE_CODE_") }) {
-      return .aiAgent(kind: .claudeCode, sessionID: sessionID(in: environment, prefix: "CLAUDE_CODE_"))
+    if environment["CLAUDECODE"] == "1"
+      || environment.keys.contains(where: { $0.hasPrefix("CLAUDE_CODE_") })
+      || environment["AI_AGENT"]?.hasPrefix("claude-code") == true {
+      return .aiAgent(
+        kind: .claudeCode,
+        sessionID: sessionID(in: environment, prefix: "CLAUDE_CODE_"),
+        source: .env
+      )
     }
 
     if environment.keys.contains(where: { $0.hasPrefix("CURSOR_") }) {
-      return .aiAgent(kind: .cursor, sessionID: sessionID(in: environment, prefix: "CURSOR_"))
+      return .aiAgent(kind: .cursor, sessionID: sessionID(in: environment, prefix: "CURSOR_"), source: .env)
     }
 
     if environment.keys.contains(where: { $0.hasPrefix("CODEX_") }) {
-      return .aiAgent(kind: .codex, sessionID: sessionID(in: environment, prefix: "CODEX_"))
+      return .aiAgent(kind: .codex, sessionID: sessionID(in: environment, prefix: "CODEX_"), source: .env)
     }
 
     if environment.keys.contains(where: { $0.hasPrefix("OPENCODE_") }) {
-      return .aiAgent(kind: .opencode, sessionID: sessionID(in: environment, prefix: "OPENCODE_"))
+      return .aiAgent(kind: .opencode, sessionID: sessionID(in: environment, prefix: "OPENCODE_"), source: .env)
     }
 
     if environment.keys.contains(where: { $0.hasPrefix("AIDER_") }) {
-      return .aiAgent(kind: .aider, sessionID: sessionID(in: environment, prefix: "AIDER_"))
+      return .aiAgent(kind: .aider, sessionID: sessionID(in: environment, prefix: "AIDER_"), source: .env)
     }
 
     if environment.keys.contains(where: { $0.hasPrefix("GEMINI_CLI_") }) {
-      return .aiAgent(kind: .gemini, sessionID: sessionID(in: environment, prefix: "GEMINI_CLI_"))
+      return .aiAgent(kind: .gemini, sessionID: sessionID(in: environment, prefix: "GEMINI_CLI_"), source: .env)
     }
 
     if environment.keys.contains(where: { $0.hasPrefix("COPILOT_") }) {
-      return .aiAgent(kind: .copilot, sessionID: sessionID(in: environment, prefix: "COPILOT_"))
+      return .aiAgent(kind: .copilot, sessionID: sessionID(in: environment, prefix: "COPILOT_"), source: .env)
     }
 
     if environment.keys.contains(where: { $0 == "AUGMENT_AGENT" || $0.hasPrefix("AUGMENT_") }) {
-      return .aiAgent(kind: .augment, sessionID: sessionID(in: environment, prefix: "AUGMENT_"))
+      return .aiAgent(kind: .augment, sessionID: sessionID(in: environment, prefix: "AUGMENT_"), source: .env)
     }
 
     if environment.keys.contains(where: { $0.hasPrefix("QWEN_CODE_") }) {
-      return .aiAgent(kind: .qwenCode, sessionID: sessionID(in: environment, prefix: "QWEN_CODE_"))
+      return .aiAgent(kind: .qwenCode, sessionID: sessionID(in: environment, prefix: "QWEN_CODE_"), source: .env)
     }
 
     return nil

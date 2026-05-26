@@ -57,3 +57,17 @@ Env-variable capture is whitelisted by prefix; no general dump. Snapshot data st
 - True idle-time detection via socket-accept timestamps (`netstat -nv` / `lsof -F`) for a sharper stale heuristic.
 - Auto-sweep setting (opt-in) per agent or repo.
 - "Owner" column in the Runtime Browser window (currently menu-bar only).
+
+## Update 2026-05-26 — Detection source surfacing
+
+`ProcessOwner.aiAgent` now carries a third associated value `source: DetectionSource` (`env`, `parentChain`, `argv`). Rationale: the three detection channels are not equally trustworthy and the UI was implicitly overclaiming. The badge style now encodes confidence:
+
+- **env** — filled capsule. The agent's own process emitted a known marker variable in its descendants' environment. Strongest signal.
+- **parentChain** — outlined capsule. The PID chain still leads to a known agent executable. Reliable for shell-child processes; broken for anything reparented to launchd (brew services, docker daemon, `nohup`).
+- **argv** — dashed border with `~` prefix. The process's own `argv[0]` basename matches a known agent (rare in practice; mostly fires when the agent is itself a wrapper around the dev server).
+
+Detached services (brew, docker, launchd-spawned) are deliberately not given heuristic owners — they fall to `.unknown`. The Workspace Stacks feature (ADR-002) covers correlation-by-workspace for that gap, without making attribution claims.
+
+`script/audit_agent_env.sh` lists known agent CLIs on the host and dumps env vars matching the whitelist prefixes, so the detection rules can be verified per agent on real machines rather than guessed.
+
+Verified env signals on Claude Code 2.1.150 (2026-05-26): `CLAUDECODE=1`, `CLAUDE_CODE_SESSION_ID`, `CLAUDE_CODE_ENTRYPOINT`, `CLAUDE_CODE_EXECPATH`, `AI_AGENT=claude-code_*`. Other agents need the same verification before their env-based rules can be considered proven.

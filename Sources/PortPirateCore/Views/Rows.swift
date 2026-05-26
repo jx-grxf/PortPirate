@@ -153,14 +153,17 @@ struct OwnerPresentation: Equatable {
   let label: String
   let tooltip: String
   let tint: Color
+  let source: DetectionSource
 
   init?(server: ListeningServer) {
-    guard let owner = server.process?.owner, case .aiAgent(let kind, let sessionID) = owner else {
+    guard let owner = server.process?.owner,
+          case .aiAgent(let kind, let sessionID, let source) = owner else {
       return nil
     }
     self.label = kind.displayName
     self.tint = kind.tint
-    var tooltipParts: [String] = ["Started by \(kind.displayName)"]
+    self.source = source
+    var tooltipParts: [String] = ["\(kind.displayName) · matched via \(source.tooltipPhrase)"]
     if let sessionID, !sessionID.isEmpty {
       tooltipParts.append("session \(sessionID)")
     }
@@ -175,14 +178,53 @@ struct OwnerBadge: View {
   let owner: OwnerPresentation
 
   var body: some View {
-    Text(owner.label)
-      .font(.caption2.weight(.semibold))
-      .foregroundStyle(owner.tint)
-      .padding(.horizontal, 6)
-      .padding(.vertical, 1)
-      .background(owner.tint.opacity(0.14), in: Capsule())
-      .overlay(Capsule().strokeBorder(owner.tint.opacity(0.28), lineWidth: 0.5))
-      .help(owner.tooltip)
+    HStack(spacing: 3) {
+      if owner.source == .argv {
+        Text("~").font(.caption2.weight(.bold)).foregroundStyle(owner.tint.opacity(0.8))
+      }
+      Text(owner.label)
+        .font(.caption2.weight(.semibold))
+        .foregroundStyle(owner.tint)
+    }
+    .padding(.horizontal, 6)
+    .padding(.vertical, 1)
+    .background(fillStyle, in: Capsule())
+    .overlay(Capsule().stroke(owner.tint.opacity(strokeOpacity), style: strokeStyle))
+    .help(owner.tooltip)
+  }
+
+  private var fillStyle: AnyShapeStyle {
+    switch owner.source {
+    case .env: return AnyShapeStyle(owner.tint.opacity(0.22))
+    case .parentChain: return AnyShapeStyle(owner.tint.opacity(0.08))
+    case .argv: return AnyShapeStyle(Color.clear)
+    }
+  }
+
+  private var strokeOpacity: Double {
+    switch owner.source {
+    case .env: return 0.35
+    case .parentChain: return 0.5
+    case .argv: return 0.6
+    }
+  }
+
+  private var strokeStyle: StrokeStyle {
+    switch owner.source {
+    case .env: return StrokeStyle(lineWidth: 0.5)
+    case .parentChain: return StrokeStyle(lineWidth: 0.7)
+    case .argv: return StrokeStyle(lineWidth: 0.7, dash: [2, 2])
+    }
+  }
+}
+
+extension DetectionSource {
+  var tooltipPhrase: String {
+    switch self {
+    case .env: return "agent env var (high confidence)"
+    case .parentChain: return "parent process chain"
+    case .argv: return "argv basename (likely)"
+    }
   }
 }
 
