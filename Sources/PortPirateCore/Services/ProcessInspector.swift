@@ -99,7 +99,7 @@ public actor ProcessInspector {
       pid: pid,
       ppidChain: parentChain(of: pid),
       cwd: vnodePaths(for: pid).cwd,
-      executablePath: executablePath(for: pid),
+      executablePath: Self.executablePath(for: pid),
       argv: arguments.argv,
       envSubset: ProcessInspector.filteredEnvironment(arguments.environment),
       startedAt: bsdInfo.pbi_start_tvsec > 0
@@ -165,7 +165,7 @@ public actor ProcessInspector {
     )
   }
 
-  private func executablePath(for pid: pid_t) -> String? {
+  public nonisolated static func executablePath(for pid: pid_t) -> String? {
     var buffer = [CChar](repeating: 0, count: Int(MAXPATHLEN))
     let result = proc_pidpath(pid, &buffer, UInt32(buffer.count))
     guard result > 0 else { return nil }
