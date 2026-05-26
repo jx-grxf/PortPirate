@@ -128,6 +128,24 @@ public final class AppState {
     developerServers.filter(passesActiveFilters)
   }
 
+  public var groupedDeveloperServers: StackGrouper.GroupedServers {
+    StackGrouper.group(visibleDeveloperServers)
+  }
+
+  public var developerStacks: [WorkspaceStack] {
+    groupedDeveloperServers.stacks
+  }
+
+  public var ungroupedDeveloperServers: [ListeningServer] {
+    groupedDeveloperServers.ungrouped
+  }
+
+  public func stopStack(_ stack: WorkspaceStack) async {
+    for server in stack.servers where server.isPrimaryRuntime {
+      await stop(server: server, force: false)
+    }
+  }
+
   public var hasAgentDetectedServers: Bool {
     developerServers.contains { AppState.isAIAgent($0) }
   }

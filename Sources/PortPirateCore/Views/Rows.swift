@@ -37,6 +37,89 @@ struct EmptyStateRow: View {
   }
 }
 
+struct StackCardView: View {
+  @Bindable var appState: AppState
+  let stack: WorkspaceStack
+  @State private var isExpanded: Bool = true
+  @State private var showingStopConfirmation = false
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 0) {
+      DisclosureGroup(isExpanded: $isExpanded.animation(Theme.expand)) {
+        VStack(spacing: Theme.s2) {
+          ForEach(stack.servers) { server in
+            ServerRowView(appState: appState, server: server)
+          }
+        }
+        .padding(.top, Theme.s2)
+      } label: {
+        header
+      }
+    }
+    .padding(Theme.s3)
+    .glassCard()
+    .confirmationDialog(
+      "Stop \(stack.servers.count) services in \(stack.name)?",
+      isPresented: $showingStopConfirmation,
+      titleVisibility: .visible
+    ) {
+      Button("Stop all", role: .destructive) {
+        Task { await appState.stopStack(stack) }
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text(stack.servers.map { ":\($0.port)" }.joined(separator: ", "))
+    }
+  }
+
+  private var header: some View {
+    HStack(spacing: Theme.s2) {
+      StatusDot(stack.status)
+      VStack(alignment: .leading, spacing: 1) {
+        Text(stack.name)
+          .font(.callout)
+          .bold()
+          .lineLimit(1)
+        Text(subtitle)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+      }
+      Spacer(minLength: Theme.s2)
+      if stack.hasMixedBranches {
+        Image(systemName: "exclamationmark.triangle.fill")
+          .foregroundStyle(.yellow)
+          .font(.caption)
+          .help("Services in this stack are on different git branches")
+      }
+      Button("Stop all", systemImage: "stop.circle") {
+        if appState.confirmForceKill {
+          showingStopConfirmation = true
+        } else {
+          Task { await appState.stopStack(stack) }
+        }
+      }
+      .labelStyle(.iconOnly)
+      .buttonStyle(.borderless)
+      .help("Stop all services in \(stack.name)")
+    }
+    .contentShape(.rect)
+  }
+
+  private var subtitle: String {
+    var parts = ["\(stack.servers.count) services"]
+    if let branch = stack.branch {
+      parts.append(branch)
+    } else if stack.hasMixedBranches {
+      parts.append("mixed branches")
+    }
+    if stack.isWorktree {
+      parts.append("worktree")
+    }
+    return parts.joined(separator: " · ")
+  }
+}
+
 struct ServerRowView: View {
   @Bindable var appState: AppState
   let server: ListeningServer

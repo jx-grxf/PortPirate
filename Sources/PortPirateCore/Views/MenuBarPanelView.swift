@@ -109,8 +109,8 @@ public struct MenuBarPanelView: View {
         EmptyStateRow(title: "No listening dev ports", subtitle: "Start a server and PortPirate will pick it up.")
       } else {
         filterChips
-        let filtered = appState.visibleDeveloperServers
-        if filtered.isEmpty {
+        let grouped = appState.groupedDeveloperServers
+        if grouped.stacks.isEmpty && grouped.ungrouped.isEmpty {
           EmptyStateRow(
             title: "No matches for current filter",
             subtitle: appState.filterAIAgentsOnly && appState.filterStaleOnly
@@ -120,7 +120,10 @@ public struct MenuBarPanelView: View {
                 : "No processes older than 30 minutes."
           )
         } else {
-          ForEach(filtered.prefix(8)) { server in
+          ForEach(grouped.stacks) { stack in
+            StackCardView(appState: appState, stack: stack)
+          }
+          ForEach(grouped.ungrouped.prefix(8)) { server in
             ServerRowView(appState: appState, server: server)
           }
         }
