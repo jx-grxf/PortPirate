@@ -7,6 +7,10 @@ public struct PortEndpoint: Hashable, Sendable {
   public let port: Int
 }
 
+public protocol PortScanning: Sendable {
+  func scan() async throws -> [PortEndpoint]
+}
+
 public enum PortScannerParser {
   public static func parse(_ output: String) -> [PortEndpoint] {
     var endpoints: [PortEndpoint] = []
@@ -82,3 +86,5 @@ public actor PortScanner {
     }
   }
 }
+
+extension PortScanner: PortScanning {}

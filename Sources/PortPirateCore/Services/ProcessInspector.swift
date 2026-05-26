@@ -52,6 +52,11 @@ public enum ProcessInspectorParser {
   }
 }
 
+public protocol ProcessInspecting: Sendable {
+  func inspect(processIDs: Set<Int32>) async -> [Int32: PortPirateProcess]
+  func context(for pid: pid_t) async -> ProcessContext?
+}
+
 public actor ProcessInspector {
   private let runner: CommandRunning
   private let lsofPath: String
@@ -91,7 +96,7 @@ public actor ProcessInspector {
     return processes
   }
 
-  public func context(for pid: pid_t) -> ProcessContext? {
+  public func context(for pid: pid_t) async -> ProcessContext? {
     guard let bsdInfo = bsdInfo(for: pid) else { return nil }
     let arguments = argumentsAndEnvironment(for: pid)
 
@@ -265,3 +270,5 @@ public actor ProcessInspector {
     }
   }
 }
+
+extension ProcessInspector: ProcessInspecting {}
