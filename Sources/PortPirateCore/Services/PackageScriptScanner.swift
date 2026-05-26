@@ -1,30 +1,51 @@
 import Foundation
 
+public enum PackageScriptScannerError: LocalizedError, Equatable {
+  case folderUnreachable(String)
+
+  public var errorDescription: String? {
+    switch self {
+    case .folderUnreachable(let name):
+      return "Could not read \(name). Make sure the folder still exists and is readable."
+    }
+  }
+}
+
 public enum PackageScriptScanner {
   public static func scanWorkspace(at url: URL) throws -> WorkspaceProfile {
-    let packageURL = url.appendingPathComponent("package.json")
-    let data = try Data(contentsOf: packageURL)
-    let object = try JSONSerialization.jsonObject(with: data)
-    guard let root = object as? [String: Any] else {
-      throw CocoaError(.fileReadCorruptFile)
+    let fileManager = FileManager.default
+    var isDirectory: ObjCBool = false
+    guard fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+      throw PackageScriptScannerError.folderUnreachable(url.lastPathComponent)
     }
 
-    let rawName = (root["name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
-    let scriptsObject = root["scripts"] as? [String: String] ?? [:]
-    let scripts = scriptsObject
-      .map { PackageScript(name: $0.key, command: $0.value) }
-      .sorted { $0.name < $1.name }
+    let packageURL = url.appendingPathComponent("package.json")
+    if let data = try? Data(contentsOf: packageURL),
+       let object = try? JSONSerialization.jsonObject(with: data),
+       let root = object as? [String: Any] {
+      let rawName = (root["name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+      let scriptsObject = root["scripts"] as? [String: String] ?? [:]
+      let scripts = scriptsObject
+        .map { PackageScript(name: $0.key, command: $0.value) }
+        .sorted { $0.name < $1.name }
+      let profileName = (rawName?.isEmpty == false ? rawName ?? url.lastPathComponent : url.lastPathComponent)
 
-    let profileName = rawName?.isEmpty == false ? rawName ?? url.lastPathComponent : url.lastPathComponent
-    let profile = WorkspaceProfile(
-      name: profileName,
+      return WorkspaceProfile(
+        name: profileName,
+        path: url.path,
+        packageManager: packageManager(for: url),
+        scripts: scripts,
+        expectedPorts: expectedPorts(from: scripts)
+      )
+    }
+
+    return WorkspaceProfile(
+      name: url.lastPathComponent,
       path: url.path,
-      packageManager: packageManager(for: url),
-      scripts: scripts,
-      expectedPorts: expectedPorts(from: scripts)
+      packageManager: detectProjectKind(at: url),
+      scripts: [],
+      expectedPorts: []
     )
-
-    return profile
   }
 
   public static func packageManager(for workspaceURL: URL) -> PackageManager {
@@ -40,6 +61,20 @@ public enum PackageScriptScanner {
       return .yarn
     }
     return .npm
+  }
+
+  public static func detectProjectKind(at workspaceURL: URL) -> PackageManager {
+    let fileManager = FileManager.default
+    let exists: (String) -> Bool = { name in
+      fileManager.fileExists(atPath: workspaceURL.appendingPathComponent(name).path)
+    }
+
+    if exists("Package.swift") { return .swift }
+    if exists("Cargo.toml") { return .cargo }
+    if exists("go.mod") { return .go }
+    if exists("pyproject.toml") || exists("requirements.txt") || exists("Pipfile") { return .python }
+    if exists("Gemfile") { return .ruby }
+    return .other
   }
 
   public static func expectedPorts(from scripts: [PackageScript]) -> [Int] {
