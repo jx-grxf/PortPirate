@@ -88,10 +88,14 @@ cat >"$INFO_PLIST" <<PLIST
 PLIST
 
 if command -v codesign >/dev/null 2>&1; then
-  if [[ -d "$APP_FRAMEWORKS/Sparkle.framework" ]]; then
-    codesign --force --sign "$SIGN_IDENTITY" "$APP_FRAMEWORKS/Sparkle.framework"
+  codesign_args=(--force --sign "$SIGN_IDENTITY")
+  if [[ "$SIGN_IDENTITY" != "-" ]]; then
+    codesign_args+=(--options runtime --timestamp)
   fi
-  codesign --force --deep --sign "$SIGN_IDENTITY" "$APP_BUNDLE"
+  if [[ -d "$APP_FRAMEWORKS/Sparkle.framework" ]]; then
+    codesign "${codesign_args[@]}" "$APP_FRAMEWORKS/Sparkle.framework"
+  fi
+  codesign --deep "${codesign_args[@]}" "$APP_BUNDLE"
 fi
 
 open_app() {

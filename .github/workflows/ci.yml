@@ -24,6 +24,9 @@ jobs:
       - name: Show Swift version
         run: swift --version
 
+      - name: Audit release identity
+        run: ./script/audit_release_identity.sh
+
       - name: Build
         run: swift build
 

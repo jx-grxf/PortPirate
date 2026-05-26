@@ -25,6 +25,9 @@ jobs:
       - name: Show Swift version
         run: swift --version
 
+      - name: Audit release identity
+        run: ./script/audit_release_identity.sh
+
       - name: Test
         run: swift test
 
@@ -61,6 +64,7 @@ jobs:
           PORTPIRATE_VERSION: ${{ steps.version.outputs.version }}
           PORTPIRATE_BUILD: ${{ github.run_number }}
           PORTPIRATE_SPARKLE_PUBLIC_KEY: ${{ secrets.PORTPIRATE_SPARKLE_PUBLIC_KEY }}
+          PORTPIRATE_SIGN_IDENTITY: ${{ secrets.PORTPIRATE_SIGN_IDENTITY }}
         run: ./script/package_dmg.sh
 
       - name: Build Sparkle assets
@@ -71,7 +75,15 @@ jobs:
           PORTPIRATE_SPARKLE_PUBLIC_KEY: ${{ secrets.PORTPIRATE_SPARKLE_PUBLIC_KEY }}
           PORTPIRATE_SPARKLE_PRIVATE_KEY: ${{ secrets.PORTPIRATE_SPARKLE_PRIVATE_KEY }}
           PORTPIRATE_SPARKLE_DOWNLOAD_PREFIX: https://github.com/jx-grxf/PortPirate/releases/download/${{ steps.version.outputs.tag }}
+          PORTPIRATE_SIGN_IDENTITY: ${{ secrets.PORTPIRATE_SIGN_IDENTITY }}
         run: ./script/create_sparkle_assets.sh
+
+      - name: Verify Sparkle appcast
+        run: |
+          ./script/verify_appcast.swift \
+            "dist/sparkle/appcast.xml" \
+            "https://github.com/jx-grxf/PortPirate/releases/download/${{ steps.version.outputs.tag }}/PortPirate-${{ steps.version.outputs.version }}.zip" \
+            "${{ steps.version.outputs.channel }}"
 
       - name: Verify app signature
         run: codesign --verify --deep --strict dist/PortPirate.app
@@ -80,6 +92,22 @@ jobs:
         env:
           PORTPIRATE_VERSION: ${{ steps.version.outputs.version }}
         run: hdiutil imageinfo "dist/PortPirate-${PORTPIRATE_VERSION}.dmg" >/dev/null
+
+      - name: Notarize DMG
+        env:
+          PORTPIRATE_VERSION: ${{ steps.version.outputs.version }}
+          PORTPIRATE_NOTARY_ENABLED: ${{ secrets.PORTPIRATE_NOTARY_ENABLED }}
+          PORTPIRATE_NOTARY_KEYCHAIN_PROFILE: ${{ secrets.PORTPIRATE_NOTARY_KEYCHAIN_PROFILE }}
+          PORTPIRATE_NOTARY_APPLE_ID: ${{ secrets.PORTPIRATE_NOTARY_APPLE_ID }}
+          PORTPIRATE_NOTARY_TEAM_ID: ${{ secrets.PORTPIRATE_NOTARY_TEAM_ID }}
+          PORTPIRATE_NOTARY_PASSWORD: ${{ secrets.PORTPIRATE_NOTARY_PASSWORD }}
+        run: ./script/notarize_release.sh
+
+      - name: Validate notarization staple
+        if: ${{ secrets.PORTPIRATE_NOTARY_ENABLED == 'true' }}
+        env:
+          PORTPIRATE_VERSION: ${{ steps.version.outputs.version }}
+        run: xcrun stapler validate "dist/PortPirate-${PORTPIRATE_VERSION}.dmg"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v7
