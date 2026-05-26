@@ -370,7 +370,7 @@ struct ProfileRowView: View {
           Text(profile.name)
             .font(.callout)
             .bold()
-          Text("\(profile.packageManager.rawValue) • \(URL(fileURLWithPath: profile.path).lastPathComponent)")
+          Text("\(profile.packageManager.label) • \(URL(fileURLWithPath: profile.path).lastPathComponent)")
             .font(.caption)
             .foregroundStyle(.secondary)
         }

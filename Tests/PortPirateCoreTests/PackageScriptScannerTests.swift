@@ -37,4 +37,34 @@ final class PackageScriptScannerTests: XCTestCase {
 
     XCTAssertEqual(PackageScriptScanner.expectedPorts(from: scripts), [3000, 4322, 5174])
   }
+
+  func testSwiftPackageFolderWithoutPackageJsonIsStillAdoptable() throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    FileManager.default.createFile(atPath: directory.appendingPathComponent("Package.swift").path, contents: Data())
+
+    let profile = try PackageScriptScanner.scanWorkspace(at: directory)
+
+    XCTAssertEqual(profile.packageManager, .swift)
+    XCTAssertEqual(profile.scripts, [])
+    XCTAssertEqual(profile.name, directory.lastPathComponent)
+  }
+
+  func testPlainFolderWithoutAnyMarkerIsStillAdoptable() throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+
+    let profile = try PackageScriptScanner.scanWorkspace(at: directory)
+
+    XCTAssertEqual(profile.packageManager, .other)
+    XCTAssertEqual(profile.scripts, [])
+    XCTAssertEqual(profile.packageManager.runsScripts, false)
+  }
+
+  func testMissingFolderThrows() {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent("does-not-exist-\(UUID())", isDirectory: true)
+    XCTAssertThrowsError(try PackageScriptScanner.scanWorkspace(at: directory))
+  }
 }

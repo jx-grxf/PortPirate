@@ -14,6 +14,7 @@ public final class AppState {
   public var diagnosisPortText = ""
   public var isRefreshing = false
   public var errorMessage: String?
+  public var workspaceMessage: WorkspaceMessage?
   public var filterAIAgentsOnly = false
   public var filterStaleOnly = false
   public static let staleThreshold: TimeInterval = 30 * 60
@@ -275,13 +276,28 @@ public final class AppState {
   public func addWorkspace(url: URL) {
     do {
       let profile = try PackageScriptScanner.scanWorkspace(at: url)
+      let alreadyTracked = profiles.contains { $0.path == profile.path }
       profiles.removeAll { $0.path == profile.path }
       profiles.append(profile)
       profiles.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
       Task { await profileStore.save(profiles) }
+
+      if alreadyTracked {
+        workspaceMessage = .info("Updated workspace “\(profile.name)”.")
+      } else if profile.scripts.isEmpty && !profile.packageManager.runsScripts {
+        workspaceMessage = .info("Added “\(profile.name)” as a \(profile.packageManager.label.lowercased()) workspace. No package scripts to run.")
+      } else if profile.scripts.isEmpty {
+        workspaceMessage = .info("Added “\(profile.name)”. No scripts found in package.json.")
+      } else {
+        workspaceMessage = .info("Added “\(profile.name)” with \(profile.scripts.count) script\(profile.scripts.count == 1 ? "" : "s").")
+      }
     } catch {
-      errorMessage = "Could not read package.json in \(url.lastPathComponent)."
+      workspaceMessage = .error(error.localizedDescription)
     }
+  }
+
+  public func clearWorkspaceMessage() {
+    workspaceMessage = nil
   }
 
   public func removeProfile(_ profile: WorkspaceProfile) {
@@ -461,6 +477,22 @@ public final class AppState {
       self?.updateChannel ?? .stable
     }
     updateService?.automaticallyChecksForUpdates = automaticallyChecksForUpdates
+  }
+}
+
+public enum WorkspaceMessage: Equatable {
+  case info(String)
+  case error(String)
+
+  public var text: String {
+    switch self {
+    case .info(let value), .error(let value): value
+    }
+  }
+
+  public var isError: Bool {
+    if case .error = self { return true }
+    return false
   }
 }
 

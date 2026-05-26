@@ -5,8 +5,36 @@ public enum PackageManager: String, Codable, CaseIterable, Sendable {
   case pnpm
   case yarn
   case bun
+  case swift
+  case cargo
+  case go
+  case python
+  case ruby
+  case other
 
   public var command: String { rawValue }
+
+  public var label: String {
+    switch self {
+    case .npm: "npm"
+    case .pnpm: "pnpm"
+    case .yarn: "yarn"
+    case .bun: "bun"
+    case .swift: "Swift Package"
+    case .cargo: "Cargo"
+    case .go: "Go module"
+    case .python: "Python"
+    case .ruby: "Ruby"
+    case .other: "folder"
+    }
+  }
+
+  public var runsScripts: Bool {
+    switch self {
+    case .npm, .pnpm, .yarn, .bun: true
+    default: false
+    }
+  }
 }
 
 public struct PackageScript: Identifiable, Hashable, Codable, Sendable {

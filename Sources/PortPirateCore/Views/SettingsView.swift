@@ -49,8 +49,8 @@ public struct SettingsView: View {
   private var pane: some View {
     switch selection.wrappedValue ?? .general {
     case .general: GeneralPane(appState: appState)
+    case .workspaces: WorkspacesPane(appState: appState)
     case .discovery: DiscoveryPane(appState: appState)
-    case .actions: ActionsPane()
     case .notifications: NotificationsPane(appState: appState)
     case .updates: UpdatesPane(appState: appState)
     case .about: AboutPane()
@@ -60,8 +60,8 @@ public struct SettingsView: View {
 
 public enum SettingsPane: String, CaseIterable, Identifiable {
   case general
+  case workspaces
   case discovery
-  case actions
   case notifications
   case updates
   case about
@@ -74,8 +74,8 @@ public enum SettingsPane: String, CaseIterable, Identifiable {
   var title: String {
     switch self {
     case .general: "General"
+    case .workspaces: "Workspaces"
     case .discovery: "Discovery"
-    case .actions: "Actions"
     case .notifications: "Notifications"
     case .updates: "Updates"
     case .about: "About"
@@ -85,8 +85,8 @@ public enum SettingsPane: String, CaseIterable, Identifiable {
   var systemImage: String {
     switch self {
     case .general: "gearshape"
+    case .workspaces: "folder.badge.gearshape"
     case .discovery: "dot.radiowaves.left.and.right"
-    case .actions: "hand.raised"
     case .notifications: "bell"
     case .updates: "arrow.down.circle"
     case .about: "info.circle"
@@ -122,62 +122,68 @@ private struct GeneralPane: View {
           }
         }
       }
+
+      SettingsCard(title: "Process Control") {
+        SettingRow(
+          title: "Confirm before Force Kill",
+          subtitle: "Show a confirmation dialog before sending SIGKILL to a process or stopping every service in a stack."
+        ) {
+          Toggle("", isOn: $appState.confirmForceKill).labelsHidden()
+        }
+
+        SettingRow(
+          title: "Stop actions are revalidated",
+          subtitle: "PortPirate re-checks PID, port, command, owner, and working directory before touching a process.",
+          systemImage: "checkmark.shield",
+          showsDivider: false
+        )
+      }
     }
     .toggleStyle(.switch)
   }
 }
 
-private struct DiscoveryPane: View {
+private struct WorkspacesPane: View {
   @Bindable var appState: AppState
 
   var body: some View {
-    VStack(spacing: Theme.s5) {
-      SettingsCard(title: "System Visibility") {
-        SettingRow(
-          title: "Show Apple services in menu bar",
-          subtitle: "Keep AirPlay and other system listeners visible, separated from local runtimes."
-        ) {
-          Toggle("", isOn: $appState.showAppleServices).labelsHidden()
+    VStack(alignment: .leading, spacing: Theme.s4) {
+      HStack(alignment: .firstTextBaseline) {
+        VStack(alignment: .leading, spacing: 2) {
+          Text("Workspaces").font(.headline)
+          Text("Any folder. PortPirate reads package.json scripts when present, and identifies Swift, Rust, Go, Python, and Ruby projects too.")
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
         }
+        Spacer()
+        Button("Add Folder", systemImage: "plus", action: chooseWorkspace)
+          .buttonStyle(.borderedProminent)
+      }
+      .padding(.horizontal, Theme.s2)
 
-        SettingRow(
-          title: "Show launchd user agents",
-          subtitle: "Read-only visibility for user agents. PortPirate does not stop launchd services.",
-          showsDivider: false
-        ) {
-          Toggle("", isOn: $appState.includeLaunchAgents).labelsHidden()
+      if let message = appState.workspaceMessage {
+        WorkspaceMessageBanner(message: message) {
+          appState.clearWorkspaceMessage()
         }
       }
 
-      VStack(alignment: .leading, spacing: Theme.s2) {
-        HStack(alignment: .firstTextBaseline) {
-          VStack(alignment: .leading, spacing: 2) {
-            Text("Workspace Profiles").font(.headline)
-            Text("Project folders with package.json scripts.")
-              .font(.callout)
-              .foregroundStyle(.secondary)
-          }
-          Spacer()
-          Button("Add Folder", systemImage: "plus", action: chooseWorkspace)
-            .buttonStyle(.borderedProminent)
-        }
-        .padding(.horizontal, Theme.s2)
-
-        cardBody
-      }
+      cardBody
     }
-    .toggleStyle(.switch)
   }
 
   @ViewBuilder
   private var cardBody: some View {
     if appState.profiles.isEmpty {
-      ContentUnavailableView(
-        "No Workspace Profiles",
-        systemImage: "folder.badge.plus",
-        description: Text("Add a project folder to discover npm, pnpm, yarn, or bun scripts.")
-      )
-      .frame(maxWidth: .infinity, minHeight: 180)
+      ContentUnavailableView {
+        Label("No Workspaces", systemImage: "folder.badge.plus")
+      } description: {
+        Text("Add a project folder. PortPirate keeps track of its scripts, package manager, and expected ports.")
+      } actions: {
+        Button("Add Folder", action: chooseWorkspace)
+          .buttonStyle(.bordered)
+      }
+      .frame(maxWidth: .infinity, minHeight: 200)
       .background(Theme.cardFill, in: .rect(cornerRadius: Theme.cardRadius))
       .overlay(
         RoundedRectangle(cornerRadius: Theme.cardRadius)
@@ -209,6 +215,7 @@ private struct DiscoveryPane: View {
     panel.canChooseDirectories = true
     panel.allowsMultipleSelection = false
     panel.prompt = "Add"
+    panel.title = "Add a workspace folder"
 
     if panel.runModal() == .OK, let url = panel.url {
       appState.addWorkspace(url: url)
@@ -216,23 +223,67 @@ private struct DiscoveryPane: View {
   }
 }
 
-private struct ActionsPane: View {
+private struct WorkspaceMessageBanner: View {
+  let message: WorkspaceMessage
+  let dismiss: () -> Void
+
+  var body: some View {
+    HStack(alignment: .firstTextBaseline, spacing: Theme.s2) {
+      Image(systemName: message.isError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+        .foregroundStyle(message.isError ? Color.yellow : Color.accentColor)
+      Text(message.text)
+        .font(.callout)
+        .foregroundStyle(.primary)
+        .fixedSize(horizontal: false, vertical: true)
+      Spacer(minLength: Theme.s2)
+      Button(action: dismiss) {
+        Image(systemName: "xmark")
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(.secondary)
+      }
+      .buttonStyle(.borderless)
+      .help("Dismiss")
+    }
+    .padding(Theme.s3)
+    .background(
+      (message.isError ? Color.yellow : Color.accentColor).opacity(0.12),
+      in: .rect(cornerRadius: Theme.rowRadius)
+    )
+  }
+}
+
+private struct DiscoveryPane: View {
+  @Bindable var appState: AppState
+
   var body: some View {
     VStack(spacing: Theme.s5) {
-      SettingsCard(title: "Process Control") {
+      SettingsCard(title: "System Visibility") {
         SettingRow(
-          title: "Stop actions are revalidated",
-          subtitle: "PortPirate checks PID, port, command, owner, and working directory before touching a process.",
-          systemImage: "checkmark.shield"
-        )
+          title: "Show Apple services in menu bar",
+          subtitle: "Keep AirPlay and other system listeners visible, separated from local runtimes."
+        ) {
+          Toggle("", isOn: $appState.showAppleServices).labelsHidden()
+        }
+
         SettingRow(
-          title: "System services are blocked",
+          title: "Show launchd user agents",
+          subtitle: "Read-only visibility for user agents. PortPirate does not stop launchd services.",
+          showsDivider: false
+        ) {
+          Toggle("", isOn: $appState.includeLaunchAgents).labelsHidden()
+        }
+      }
+
+      SettingsCard(title: "Trust") {
+        SettingRow(
+          title: "System services are blocked from stop actions",
           subtitle: "Apple, Docker, Homebrew, and background listeners stay diagnostic-only unless they are primary local runtimes.",
           systemImage: "lock",
           showsDivider: false
         )
       }
     }
+    .toggleStyle(.switch)
   }
 }
 
@@ -274,7 +325,7 @@ private struct NotificationsPane: View {
         }
         SettingRow(
           title: "A PortPirate-managed process exits with an error",
-          subtitle: "Only applies to scripts launched from PortPirate workspace profiles."
+          subtitle: "Only applies to scripts launched from PortPirate workspaces."
         ) {
           Toggle("", isOn: binding(\.managedProcessCrashEnabled)).labelsHidden()
         }
@@ -390,7 +441,7 @@ private struct AboutPane: View {
           .font(.title.weight(.bold))
         Text("Version \(versionString)")
           .foregroundStyle(.secondary)
-        Text("Native macOS menu bar control center for local developer runtimes.")
+        Text("Tells you which AI agent started that local server.")
           .font(.callout)
           .foregroundStyle(.secondary)
           .multilineTextAlignment(.center)
@@ -493,7 +544,13 @@ private struct WorkspaceProfileSettingsRow: View {
 
         Spacer()
 
-        Text(profile.packageManager.rawValue)
+        if !profile.scripts.isEmpty {
+          Text("\(profile.scripts.count) script\(profile.scripts.count == 1 ? "" : "s")")
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.secondary)
+        }
+
+        Text(profile.packageManager.label)
           .font(.caption.monospaced())
           .foregroundStyle(.secondary)
           .padding(.horizontal, Theme.s2)
