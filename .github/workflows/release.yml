@@ -103,6 +103,12 @@ jobs:
           PORTPIRATE_NOTARY_PASSWORD: ${{ secrets.PORTPIRATE_NOTARY_PASSWORD }}
         run: ./script/notarize_release.sh
 
+      - name: Validate notarization staple
+        if: ${{ secrets.PORTPIRATE_NOTARY_ENABLED == 'true' }}
+        env:
+          PORTPIRATE_VERSION: ${{ steps.version.outputs.version }}
+        run: xcrun stapler validate "dist/PortPirate-${PORTPIRATE_VERSION}.dmg"
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v7
         with:

@@ -19,7 +19,7 @@ PortPirate now presents as a focused native macOS developer utility instead of a
 
 ## Remaining Public Risks
 
-- Preview releases are still ad-hoc signed and not notarized.
+- The release pipeline now signs, notarizes, staples, and validates the DMG when release signing and notarization secrets are configured. Activation still depends on setting `PORTPIRATE_NOTARY_ENABLED=true` with the required Apple credentials.
 - A short demo clip would make the interaction model clearer than a screenshot alone.
 - The release page should keep using clear notes with Highlights, Fixed, Improved, PRs, and Known Limitations.
 - A Homebrew Cask would make installation feel more mature once notarization is in place.
