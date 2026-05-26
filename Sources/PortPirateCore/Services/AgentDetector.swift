@@ -47,6 +47,30 @@ public struct AgentDetector: Sendable {
       return .aiAgent(kind: .codex, sessionID: sessionID(in: environment, prefix: "CODEX_"))
     }
 
+    if environment.keys.contains(where: { $0.hasPrefix("OPENCODE_") }) {
+      return .aiAgent(kind: .opencode, sessionID: sessionID(in: environment, prefix: "OPENCODE_"))
+    }
+
+    if environment.keys.contains(where: { $0.hasPrefix("AIDER_") }) {
+      return .aiAgent(kind: .aider, sessionID: sessionID(in: environment, prefix: "AIDER_"))
+    }
+
+    if environment.keys.contains(where: { $0.hasPrefix("GEMINI_CLI_") }) {
+      return .aiAgent(kind: .gemini, sessionID: sessionID(in: environment, prefix: "GEMINI_CLI_"))
+    }
+
+    if environment.keys.contains(where: { $0.hasPrefix("COPILOT_") }) {
+      return .aiAgent(kind: .copilot, sessionID: sessionID(in: environment, prefix: "COPILOT_"))
+    }
+
+    if environment.keys.contains(where: { $0 == "AUGMENT_AGENT" || $0.hasPrefix("AUGMENT_") }) {
+      return .aiAgent(kind: .augment, sessionID: sessionID(in: environment, prefix: "AUGMENT_"))
+    }
+
+    if environment.keys.contains(where: { $0.hasPrefix("QWEN_CODE_") }) {
+      return .aiAgent(kind: .qwenCode, sessionID: sessionID(in: environment, prefix: "QWEN_CODE_"))
+    }
+
     return nil
   }
 
@@ -58,12 +82,19 @@ public struct AgentDetector: Sendable {
   }
 
   private func kindFromArguments(_ arguments: [String]) -> AgentKind? {
-    let commandLine = arguments.joined(separator: " ").lowercased()
-    if commandLine.contains("claude") { return .claudeCode }
-    if commandLine.contains("cursor-agent") { return .cursor }
-    if commandLine.contains("codex") { return .codex }
-    if commandLine.contains("aider") { return .aider }
-    if commandLine.contains("windsurf") { return .windsurf }
+    for name in executableBasenames(arguments) {
+      if ["claude", "claude-code"].contains(name) { return .claudeCode }
+      if name == "cursor-agent" { return .cursor }
+      if name == "codex" { return .codex }
+      if name == "aider" { return .aider }
+      if name == "windsurf" { return .windsurf }
+      if name == "opencode" { return .opencode }
+      if ["gemini", "gemini-cli"].contains(name) { return .gemini }
+      if name == "copilot" { return .copilot }
+      if name == "auggie" { return .augment }
+      if ["qwen", "qwen-code"].contains(name) { return .qwenCode }
+    }
+
     return nil
   }
 
@@ -72,11 +103,22 @@ public struct AgentDetector: Sendable {
       if name.contains("claude") { return .claudeCode }
       if name.contains("cursor") { return .cursor }
       if name.contains("codex") { return .codex }
-      if name == "code-insiders" { return .other }
+      if name == "code-insiders" || name == "code" { return .vsCodeAgent }
       if name.contains("windsurf") { return .windsurf }
+      if name.contains("opencode") { return .opencode }
+      if name.contains("gemini") { return .gemini }
+      if name.contains("copilot") { return .copilot }
+      if name.contains("auggie") || name.contains("augment") { return .augment }
+      if name.contains("qwen") { return .qwenCode }
     }
 
     return nil
+  }
+
+  private func executableBasenames(_ arguments: [String]) -> [String] {
+    arguments.map { argument in
+      URL(fileURLWithPath: argument).lastPathComponent.lowercased()
+    }
   }
 
   private func isInteractiveShell(_ name: String) -> Bool {

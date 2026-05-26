@@ -12,5 +12,11 @@ public enum AgentKind: String, Codable, Sendable {
   case codex
   case windsurf
   case aider
+  case opencode
+  case gemini
+  case copilot
+  case augment
+  case qwenCode
+  case vsCodeAgent
   case other
 }
