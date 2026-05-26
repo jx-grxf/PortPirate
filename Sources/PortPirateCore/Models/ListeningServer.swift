@@ -71,7 +71,29 @@ public struct ListeningServer: Identifiable, Hashable, Codable, Sendable {
       || processName == "ControlCenter"
   }
 
+  public var isEditorHelper: Bool {
+    let haystacks = [
+      commandLine.lowercased(),
+      (process?.currentDirectory ?? "").lowercased()
+    ]
+    let needles = [
+      "/visual studio code.app/",
+      "/visual studio code - insiders.app/",
+      "/cursor.app/",
+      "/windsurf.app/",
+      "/code helper",
+      "/cursor helper",
+      "/electron framework.framework/",
+      "/jetbrains/",
+      "/zed.app/",
+      "/zed helper"
+    ]
+    return haystacks.contains { hay in
+      needles.contains { hay.contains($0) }
+    }
+  }
+
   public var isPrimaryRuntime: Bool {
-    runtime.isPrimaryRuntime && !isAppleService
+    runtime.isPrimaryRuntime && !isAppleService && !isEditorHelper
   }
 }

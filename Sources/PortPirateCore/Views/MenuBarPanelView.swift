@@ -6,6 +6,7 @@ public struct MenuBarPanelView: View {
   @Environment(\.openSettings) private var openSettings
   @State private var isAppleServicesExpanded = false
   @State private var isBackgroundExpanded = false
+  @State private var isEditorHelpersExpanded = false
   @State private var isToolsExpanded = false
 
   public init(appState: AppState) {
@@ -26,6 +27,7 @@ public struct MenuBarPanelView: View {
           }
           serverSection
           backgroundSection
+          editorHelpersSection
           appleServicesSection
           toolsSection
         }
@@ -179,6 +181,24 @@ public struct MenuBarPanelView: View {
   }
 
   @ViewBuilder
+  private var editorHelpersSection: some View {
+    let helpers = appState.editorHelperServers
+
+    if !helpers.isEmpty {
+      DisclosureGroup(isExpanded: $isEditorHelpersExpanded.animation(Theme.expand)) {
+        VStack(spacing: Theme.s2) {
+          ForEach(helpers.prefix(20)) { server in
+            ServerRowView(appState: appState, server: server, allowsStop: false)
+          }
+        }
+        .padding(.top, Theme.s2)
+      } label: {
+        sectionLabel("Editor helpers", systemImage: "chevron.left.forwardslash.chevron.right", count: helpers.count)
+      }
+    }
+  }
+
+  @ViewBuilder
   private var appleServicesSection: some View {
     let appleServices = appState.appleServiceServers
 
@@ -322,9 +342,9 @@ public struct MenuBarPanelView: View {
       return errorMessage
     }
     let count = appState.developerServers.count
-    let backgroundCount = appState.backgroundServers.count
+    let otherCount = appState.backgroundServers.count + appState.editorHelperServers.count
     let warnings = appState.warningCount
-    let listenerText = backgroundCount == 0 ? "" : ", \(backgroundCount) other"
+    let listenerText = otherCount == 0 ? "" : ", \(otherCount) other"
     if count == 0 { return "No dev runtimes\(listenerText)" }
     if warnings == 0 { return "\(count) active\(listenerText)" }
     return "\(count) active, \(warnings) warning\(warnings == 1 ? "" : "s")\(listenerText)"

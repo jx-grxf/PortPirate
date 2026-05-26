@@ -175,7 +175,11 @@ public final class AppState {
   }
 
   public var backgroundServers: [ListeningServer] {
-    servers.filter { !$0.isAppleService && !$0.isPrimaryRuntime }
+    servers.filter { !$0.isAppleService && !$0.isEditorHelper && !$0.isPrimaryRuntime }
+  }
+
+  public var editorHelperServers: [ListeningServer] {
+    servers.filter(\.isEditorHelper)
   }
 
   public var appleServiceServers: [ListeningServer] {
