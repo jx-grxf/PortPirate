@@ -12,12 +12,12 @@ Thanks for helping improve PortPirate. This project is a native macOS developer 
 ## Development Setup
 
 ```bash
-swift build
-swift test
+xcrun swift build
+xcrun swift test
 ./script/build_and_run.sh --verify
 ```
 
-Use macOS 14+ with Xcode 15+ or a compatible Apple Swift toolchain.
+Use macOS 14+ with Xcode 15+ or a compatible Apple Swift toolchain. The `xcrun` prefix ensures the Xcode toolchain is used; plain `swift build` may fail on machines where [`swiftly`](https://github.com/swiftlang/swiftly) is the active manager and the project's pinned toolchain is not installed.
 
 ## Pull Request Guidelines
 

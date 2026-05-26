@@ -108,7 +108,7 @@ public struct MenuBarPanelView: View {
       SectionHeader(title: "Local runtimes", systemImage: "server.rack")
 
       if appState.developerServers.isEmpty {
-        EmptyStateRow(title: "No listening dev ports", subtitle: "Start a server and PortPirate will pick it up.")
+        EmptyStateRow(title: emptyStateTitle, subtitle: emptyStateSubtitle)
       } else {
         filterChips
         let grouped = appState.groupedDeveloperServers
@@ -122,11 +122,15 @@ public struct MenuBarPanelView: View {
                 : "No processes older than 30 minutes."
           )
         } else {
+          let rowCap = 8
           ForEach(grouped.stacks) { stack in
             StackCardView(appState: appState, stack: stack)
           }
-          ForEach(grouped.ungrouped.prefix(8)) { server in
+          ForEach(grouped.ungrouped.prefix(rowCap)) { server in
             ServerRowView(appState: appState, server: server)
+          }
+          if grouped.ungrouped.count > rowCap {
+            MoreRow(count: grouped.ungrouped.count - rowCap, total: grouped.ungrouped.count)
           }
         }
       }
@@ -135,6 +139,21 @@ public struct MenuBarPanelView: View {
         DiagnosticCard(result: diagnostic)
       }
     }
+  }
+
+  private var emptyStateTitle: String {
+    if appState.backgroundServers.isEmpty && appState.editorHelperServers.isEmpty {
+      return "No listening dev ports"
+    }
+    return "No primary dev runtimes"
+  }
+
+  private var emptyStateSubtitle: String {
+    let other = appState.backgroundServers.count + appState.editorHelperServers.count
+    if other == 0 {
+      return "Start a server and PortPirate will pick it up."
+    }
+    return "Listeners are hiding in the disclosures below: \(other) total."
   }
 
   @ViewBuilder
@@ -169,8 +188,11 @@ public struct MenuBarPanelView: View {
     if !backgroundServers.isEmpty {
       DisclosureGroup(isExpanded: $isBackgroundExpanded.animation(Theme.expand)) {
         VStack(spacing: Theme.s2) {
-          ForEach(backgroundServers.prefix(6)) { server in
+          ForEach(backgroundServers.prefix(40)) { server in
             ServerRowView(appState: appState, server: server, allowsStop: false)
+          }
+          if backgroundServers.count > 40 {
+            MoreRow(count: backgroundServers.count - 40, total: backgroundServers.count)
           }
         }
         .padding(.top, Theme.s2)
@@ -187,8 +209,11 @@ public struct MenuBarPanelView: View {
     if !helpers.isEmpty {
       DisclosureGroup(isExpanded: $isEditorHelpersExpanded.animation(Theme.expand)) {
         VStack(spacing: Theme.s2) {
-          ForEach(helpers.prefix(20)) { server in
+          ForEach(helpers.prefix(40)) { server in
             ServerRowView(appState: appState, server: server, allowsStop: false)
+          }
+          if helpers.count > 40 {
+            MoreRow(count: helpers.count - 40, total: helpers.count)
           }
         }
         .padding(.top, Theme.s2)
@@ -206,8 +231,11 @@ public struct MenuBarPanelView: View {
       DisclosureGroup(isExpanded: $isAppleServicesExpanded.animation(Theme.expand)) {
         VStack(spacing: Theme.s2) {
           if appState.showAppleServices {
-            ForEach(appleServices.prefix(8)) { server in
+            ForEach(appleServices.prefix(40)) { server in
               ServerRowView(appState: appState, server: server, allowsStop: false)
+            }
+            if appleServices.count > 40 {
+              MoreRow(count: appleServices.count - 40, total: appleServices.count)
             }
           } else {
             EmptyStateRow(

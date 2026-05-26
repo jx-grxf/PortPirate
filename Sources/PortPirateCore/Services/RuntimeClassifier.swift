@@ -18,15 +18,48 @@ public enum RuntimeClassifier {
     if haystack.contains("npm") { return .npm }
     if haystack.contains("openclaw") { return .openClaw }
     if haystack.contains("docker") || haystack.contains("com.docker") { return .docker }
-    if haystack.contains("homebrew.mxcl")
-      || haystack.contains("brew services")
-      || (haystack.contains("/cellar/") && !haystack.contains("/node_modules/")) {
+
+    if isDatabasePort(port) || haystack.contains("postgres")
+        || haystack.contains("postmaster")
+        || haystack.contains("mysqld") || haystack.contains("mariadb")
+        || haystack.contains("redis-server") || haystack.contains("mongod")
+        || haystack.contains("clickhouse") || haystack.contains("elasticsearch") {
+      return .database
+    }
+
+    if haystack.contains("homebrew.mxcl") || haystack.contains("brew services") {
       return .brew
     }
     if haystack.contains("launchd") { return .launchd }
     if haystack.contains("node") { return .node }
 
+    if haystack.contains("python") { return .python }
+    if haystack.contains("ruby") || haystack.contains("puma") || haystack.contains("unicorn") || haystack.contains("rails") {
+      return .ruby
+    }
+    if haystack.contains("go-build") || haystack.contains("/go/bin/") {
+      return .go
+    }
+    if haystack.contains("cargo") || haystack.contains("target/debug") || haystack.contains("target/release") {
+      return .rust
+    }
+    if haystack.contains("java") || haystack.contains(".jar") || haystack.contains("gradle") {
+      return .java
+    }
+    if haystack.contains("dotnet") {
+      return .dotnet
+    }
+
     return .unknown
+  }
+
+  private static func isDatabasePort(_ port: Int) -> Bool {
+    switch port {
+    case 5432, 5433, 3306, 6379, 27017, 9200, 9300, 8123:
+      return true
+    default:
+      return false
+    }
   }
 
   public static func warning(for runtime: RuntimeKind, port: Int, command: String) -> String? {

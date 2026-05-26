@@ -105,16 +105,18 @@ public struct AgentDetector: Sendable {
   }
 
   private func kindFromParentExecutableNames(_ names: [String]) -> AgentKind? {
-    for name in names.map({ $0.lowercased() }) {
-      if name.contains("claude") { return .claudeCode }
-      if name.contains("cursor") { return .cursor }
-      if name.contains("codex") { return .codex }
-      if name.contains("windsurf") { return .windsurf }
-      if name.contains("opencode") { return .opencode }
-      if name.contains("gemini") { return .gemini }
-      if name.contains("copilot") { return .copilot }
-      if name.contains("auggie") || name.contains("augment") { return .augment }
-      if name.contains("qwen") { return .qwenCode }
+    for raw in names {
+      let name = URL(fileURLWithPath: raw).lastPathComponent.lowercased()
+      if ["claude", "claude-code"].contains(name) { return .claudeCode }
+      if ["cursor-agent"].contains(name) { return .cursor }
+      if name == "codex" { return .codex }
+      if name == "windsurf" { return .windsurf }
+      if name == "opencode" { return .opencode }
+      if ["gemini", "gemini-cli"].contains(name) { return .gemini }
+      if name == "copilot" { return .copilot }
+      if ["auggie", "augment"].contains(name) { return .augment }
+      if ["qwen", "qwen-code"].contains(name) { return .qwenCode }
+      if name == "aider" { return .aider }
     }
 
     return nil

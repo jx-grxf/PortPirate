@@ -36,7 +36,7 @@ The agent attribution and the workspace-stack view are what make PortPirate wort
 ## Showcase
 
 <p align="center">
-  <img src="docs/assets/portpirate-showcase.png" alt="PortPirate menu bar runtime panel" width="720">
+  <img src="docs/assets/portpirate-showcase.png" alt="PortPirate menu bar runtime panel" width="380">
 </p>
 
 ## Install
@@ -52,7 +52,7 @@ Requires macOS 14 or newer. No account, no cloud sync, no analytics, no backend.
 
 Three signals, in order of confidence:
 
-1. **Environment** — known marker variables in the spawned process's env (`CLAUDECODE`, `CLAUDE_CODE_*`, `CURSOR_*`, `CODEX_*`, `OPENCODE_*`, `AIDER_*`, `GEMINI_CLI_*`, `COPILOT_*`, `AUGMENT_*`, `QWEN_CODE_*`). Strongest signal. Badge renders filled.
+1. **Environment** — known marker variables in the spawned process's env. Strongest signal, badge renders filled. Verified end-to-end on **Claude Code** (`CLAUDECODE=1`, `CLAUDE_CODE_*`, `AI_AGENT=claude-code_*`) and **Cursor** (`CURSOR_*`). Codex, opencode, Aider, Gemini, Copilot, Augment, and Qwen rules are in place but not yet verified on real sessions — see [`docs/agent-env-audits/`](docs/agent-env-audits/) for status.
 2. **Parent chain** — the process's PID chain still leads to a known agent executable. Reliable for direct shell-children; breaks when a service is reparented to launchd (brew services, docker daemon, `nohup`). Badge renders outlined.
 3. **Argv basename** — the process's own `argv[0]` matches a known agent. Rare in practice. Badge renders dashed with a `~` prefix.
 
@@ -76,12 +76,14 @@ Process control is intentionally narrow:
 ```bash
 git clone https://github.com/jx-grxf/PortPirate.git
 cd PortPirate
-swift build
-swift test
+xcrun swift build
+xcrun swift test
 ./script/build_and_run.sh
 ```
 
-The scanner, parser, classifier, process-control, profile, and stack-grouping logic live in `PortPirateCore` so they are testable without launching the app. Tests: 50 and counting.
+The `xcrun` prefix targets the Xcode toolchain. Plain `swift build` may fail on machines using [`swiftly`](https://github.com/swiftlang/swiftly) if the project's pinned toolchain is not installed locally.
+
+The scanner, parser, classifier, process-control, profile, and stack-grouping logic live in `PortPirateCore` so they are testable without launching the app.
 
 To build a local DMG:
 

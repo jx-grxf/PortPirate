@@ -126,9 +126,16 @@ private struct GeneralPane: View {
       SettingsCard(title: "Process Control") {
         SettingRow(
           title: "Confirm before Force Kill",
-          subtitle: "Show a confirmation dialog before sending SIGKILL to a process or stopping every service in a stack."
+          subtitle: "Show a confirmation dialog before sending SIGKILL to a single process."
         ) {
           Toggle("", isOn: $appState.confirmForceKill).labelsHidden()
+        }
+
+        SettingRow(
+          title: "Confirm before Stop all on a stack",
+          subtitle: "Always confirm when stopping every service in a workspace stack. Stacks with 3 or more services always confirm."
+        ) {
+          Toggle("", isOn: $appState.confirmStackStop).labelsHidden()
         }
 
         SettingRow(

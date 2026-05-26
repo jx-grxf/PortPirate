@@ -19,6 +19,24 @@ struct SectionHeader: View {
   }
 }
 
+struct MoreRow: View {
+  let count: Int
+  let total: Int
+
+  var body: some View {
+    HStack(spacing: Theme.s2) {
+      Image(systemName: "ellipsis.circle")
+        .foregroundStyle(.secondary)
+      Text("+\(count) more (\(total) total) — open Runtime Browser to see all")
+        .font(.caption)
+        .foregroundStyle(.secondary)
+      Spacer()
+    }
+    .padding(.horizontal, Theme.s3)
+    .padding(.vertical, Theme.s2)
+  }
+}
+
 struct EmptyStateRow: View {
   let title: String
   let subtitle: String
@@ -93,7 +111,7 @@ struct StackCardView: View {
           .help("Services in this stack are on different git branches")
       }
       Button("Stop all", systemImage: "stop.circle") {
-        if appState.confirmForceKill {
+        if appState.confirmStackStop || stack.servers.count >= 3 {
           showingStopConfirmation = true
         } else {
           Task { await appState.stopStack(stack) }
@@ -157,12 +175,14 @@ struct ServerRowView: View {
 
       Spacer()
 
-      Button("Open localhost:\(server.displayPort)", systemImage: "safari") {
-        appState.open(server: server)
+      if server.runtime.usesHTTP {
+        Button("Open localhost:\(server.displayPort)", systemImage: "safari") {
+          appState.open(server: server)
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
+        .help("Open localhost:\(server.displayPort)")
       }
-      .labelStyle(.iconOnly)
-      .buttonStyle(.borderless)
-      .help("Open localhost:\(server.displayPort)")
 
       Button("Diagnose", systemImage: "stethoscope") {
         appState.diagnose(server: server)
@@ -199,8 +219,14 @@ struct ServerRowView: View {
       }
       Button("Cancel", role: .cancel) {}
     } message: {
-      Text(server.commandLine)
+      Text(forceKillSummary)
     }
+  }
+
+  private var forceKillSummary: String {
+    let command = server.commandLine
+    let trimmed = command.count > 180 ? String(command.prefix(180)) + "…" : command
+    return ":\(server.displayPort)  •  \(server.displayTitle)\n\n\(trimmed)"
   }
 
   private func requestForceKill() {
