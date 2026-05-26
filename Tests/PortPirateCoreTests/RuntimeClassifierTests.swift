@@ -41,6 +41,31 @@ final class RuntimeClassifierTests: XCTestCase {
     XCTAssertNil(RuntimeClassifier.warning(for: runtime, port: 49152, command: "/usr/libexec/rapportd"))
   }
 
+  func testClassifiesPythonHttpServerAsPrimaryRuntime() {
+    let runtime = RuntimeClassifier.classify(
+      processName: "Python",
+      command: "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -m http.server 4242",
+      port: 4242,
+      currentDirectory: "/Users/me/repo"
+    )
+
+    XCTAssertEqual(runtime, .python)
+    XCTAssertTrue(runtime.isPrimaryRuntime)
+  }
+
+  func testClassifiesPostgresAsDatabase() {
+    let runtime = RuntimeClassifier.classify(
+      processName: "postgres",
+      command: "/opt/homebrew/opt/postgresql@16/bin/postgres -D /opt/homebrew/var/postgresql@16",
+      port: 5432,
+      currentDirectory: nil
+    )
+
+    XCTAssertEqual(runtime, .database)
+    XCTAssertTrue(runtime.isPrimaryRuntime)
+    XCTAssertFalse(runtime.usesHTTP)
+  }
+
   func testOpenClawInstalledThroughHomebrewNodeModulesIsNotHomebrewService() {
     let runtime = RuntimeClassifier.classify(
       processName: "node",

@@ -23,7 +23,7 @@ Concrete shape:
 
 - `LICENSE` switches from MIT to FSL-1.1-MIT effective on the first FSL-tagged release. Each release of PortPirate carries the FSL of *its release date*; commits older than two years from "today" are MIT automatically per the FSL terms.
 - `LICENSE-MIT-LEGACY` retains the original MIT header to honor pre-switch contributions.
-- A short `LICENSING.md` at the repo root explains the model in plain English and links to the FSL upstream FAQ.
+- The README "License" section becomes the plain-English explainer with a link to the FSL upstream FAQ. We deliberately do **not** add a separate `LICENSING.md` — one source of truth is easier to keep current than two.
 - `CONTRIBUTING.md` is updated: contributions are accepted under FSL-1.1-MIT going forward; contributors retain copyright; no CLA. (We can revisit a CLA later if we ever take outside investment, but not for the initial paid release.)
 - `README.md` keeps "open source eventually" framing — the badge moves from MIT to FSL.
 

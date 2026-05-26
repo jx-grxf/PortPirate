@@ -15,6 +15,13 @@ public enum RuntimeKind: String, Codable, CaseIterable, Sendable {
   case airPlay
   case launchd
   case node
+  case python
+  case ruby
+  case go
+  case rust
+  case java
+  case dotnet
+  case database
   case unknown
 
   public var title: String {
@@ -33,6 +40,13 @@ public enum RuntimeKind: String, Codable, CaseIterable, Sendable {
     case .airPlay: "AirPlay"
     case .launchd: "launchd"
     case .node: "Node"
+    case .python: "Python"
+    case .ruby: "Ruby"
+    case .go: "Go"
+    case .rust: "Rust"
+    case .java: "Java"
+    case .dotnet: ".NET"
+    case .database: "Database"
     case .unknown: "Unknown"
     }
   }
@@ -48,16 +62,27 @@ public enum RuntimeKind: String, Codable, CaseIterable, Sendable {
     case .openClaw: "point.3.connected.trianglepath.dotted"
     case .airPlay: "airplayvideo"
     case .launchd: "gearshape.2"
+    case .python, .ruby, .go, .rust, .java, .dotnet: "chevron.left.forwardslash.chevron.right"
+    case .database: "cylinder.split.1x2"
     case .unknown: "questionmark.circle"
     }
   }
 
   public var isPrimaryRuntime: Bool {
     switch self {
-    case .npm, .pnpm, .yarn, .bun, .vite, .next, .astro, .nuxt, .docker, .brew, .openClaw, .node:
+    case .npm, .pnpm, .yarn, .bun, .vite, .next, .astro, .nuxt,
+         .docker, .brew, .openClaw, .node,
+         .python, .ruby, .go, .rust, .java, .dotnet, .database:
       true
     case .airPlay, .launchd, .unknown:
       false
+    }
+  }
+
+  public var usesHTTP: Bool {
+    switch self {
+    case .database: false
+    default: true
     }
   }
 }

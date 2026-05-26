@@ -36,6 +36,10 @@ public final class AppState {
     didSet { UserDefaults.standard.set(confirmForceKill, forKey: Defaults.confirmForceKill) }
   }
 
+  public var confirmStackStop: Bool {
+    didSet { UserDefaults.standard.set(confirmStackStop, forKey: Defaults.confirmStackStop) }
+  }
+
   public var showAppleServices: Bool {
     didSet {
       UserDefaults.standard.set(showAppleServices, forKey: Defaults.showAppleServices)
@@ -83,10 +87,11 @@ public final class AppState {
     self.discoveryService = discoveryService
     self.profileStore = profileStore
     self.notificationService = notificationService
-    self.refreshInterval = UserDefaults.standard.object(forKey: Defaults.refreshInterval) as? Double ?? 8
+    self.refreshInterval = UserDefaults.standard.object(forKey: Defaults.refreshInterval) as? Double ?? 4
     self.includeLaunchAgents = UserDefaults.standard.object(forKey: Defaults.includeLaunchAgents) as? Bool ?? true
     self.showStatusCount = UserDefaults.standard.object(forKey: Defaults.showStatusCount) as? Bool ?? true
     self.confirmForceKill = UserDefaults.standard.object(forKey: Defaults.confirmForceKill) as? Bool ?? true
+    self.confirmStackStop = UserDefaults.standard.object(forKey: Defaults.confirmStackStop) as? Bool ?? true
     self.showAppleServices = UserDefaults.standard.object(forKey: Defaults.showAppleServices) as? Bool ?? false
     self.updateChannel = UpdateChannel(
       rawValue: UserDefaults.standard.string(forKey: Defaults.updateChannel) ?? ""
@@ -142,8 +147,20 @@ public final class AppState {
   }
 
   public func stopStack(_ stack: WorkspaceStack) async {
+    var failures: [String] = []
     for server in stack.servers where server.isPrimaryRuntime {
+      let messageBefore = errorMessage
+      errorMessage = nil
       await stop(server: server, force: false)
+      if let err = errorMessage {
+        failures.append(":\(server.port) — \(err)")
+      }
+      if failures.isEmpty {
+        errorMessage = messageBefore
+      }
+    }
+    if !failures.isEmpty {
+      errorMessage = "Stopped \(stack.servers.count - failures.count)/\(stack.servers.count) services. Failures: " + failures.joined(separator: "; ")
     }
   }
 
@@ -501,6 +518,7 @@ private enum Defaults {
   static let includeLaunchAgents = "includeLaunchAgents"
   static let showStatusCount = "showStatusCount"
   static let confirmForceKill = "confirmForceKill"
+  static let confirmStackStop = "confirmStackStop"
   static let showAppleServices = "showAppleServices"
   static let notificationSettings = "notificationSettings"
   static let updateChannel = "updateChannel"
