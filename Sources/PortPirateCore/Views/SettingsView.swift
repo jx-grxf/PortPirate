@@ -441,7 +441,7 @@ private struct AboutPane: View {
           .font(.title.weight(.bold))
         Text("Version \(versionString)")
           .foregroundStyle(.secondary)
-        Text("Tells you which AI agent started that local server.")
+        Text("Menu bar control for local dev ports — process, repo, and the agent behind each one.")
           .font(.callout)
           .foregroundStyle(.secondary)
           .multilineTextAlignment(.center)

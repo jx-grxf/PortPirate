@@ -2,7 +2,7 @@
 
 # PortPirate
 
-The macOS menu bar tool that tells you which AI agent started that local server.
+macOS menu bar control for local dev ports. Maps every listener to its process, its repo, and — when it can prove it — the AI agent that started it. Then it lets you stop the right one safely.
 
 [![CI](https://github.com/jx-grxf/PortPirate/actions/workflows/ci.yml/badge.svg)](https://github.com/jx-grxf/PortPirate/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/jx-grxf/PortPirate?label=release)](https://github.com/jx-grxf/PortPirate/releases/latest)
@@ -19,15 +19,19 @@ The macOS menu bar tool that tells you which AI agent started that local server.
 > [!TIP]
 > Built for the exact moment when you ask "what the hell is running on port 3000?" and the answer turns out to be a `next dev` that Claude Code spun up two hours ago and forgot about.
 
-## What PortPirate does that nothing else does
+## What it does
 
-**Agent attribution.** Every listening port is labeled with the AI agent that started it — Claude, Cursor, Codex, opencode, Aider, and others. Detection runs on three signals (env vars, parent process chain, argv basename) with a confidence badge so you know whether it is proven or a guess. No competitor does this.
+- **Discover** every listening TCP port on localhost and map it to the owning process, command line, working directory, and start time.
+- **Attribute** the listener to the AI agent that started it (Claude Code, Cursor, Codex, Aider, opencode, Gemini CLI, Copilot, Augment, Windsurf, Qwen) when there is a signal to back it up — and show how confident the match is.
+- **Group** listeners from the same git repo into a Workspace Stack card with branch, mixed-branches warning, and a Stop-all action. Worktrees group separately by path.
+- **Diagnose** busy ports with explanations for the usual suspects (Vite fallback, Next defaults, AirPlay collisions).
+- **Stop processes safely**: graceful SIGTERM with PID/port/command/owner/cwd revalidation before the signal fires, and a confirmation-gated Force Kill for the cases that need it.
+- **Quiet the noise**: VS Code / Cursor / Windsurf / Zed / JetBrains helper processes collapse into their own disclosure section. Apple system services are off by default.
+- **Run workspace scripts** from any folder. Reads `package.json` scripts when present, otherwise recognises Swift, Cargo, Go, Python, Ruby project markers.
+- **Notify** on port collisions, expected-port disappearance, managed-script crashes, and scan failures — all opt-in.
+- **Update** via Sparkle on a signed appcast with stable and beta channels.
 
-**Workspace stacks.** When three or four servers run inside the same git repo — frontend, API, worker, DB — PortPirate collapses them into a single stack card with the branch name, a `mixed branches` warning when they disagree, and a `Stop all` button. Worktrees group separately by path, so concurrent agent worktrees stay visually distinct.
-
-**Editor helpers get out of the way.** VS Code / Cursor / Windsurf / Zed / JetBrains helper processes collapse into their own disclosure section so they stop drowning your actual dev servers.
-
-Everything else (port discovery, collision diagnosis, graceful stop with revalidation, package-script profiles, launchd visibility, Sparkle updates) is in there too — but those are table stakes, not the reason to install.
+The agent attribution and the workspace-stack view are what make PortPirate worth installing over `lsof | grep` and the half-dozen "kill the thing on port X" utilities. The rest is the boring infrastructure that has to exist for those two things to be useful.
 
 ## Showcase
 
