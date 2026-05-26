@@ -2,7 +2,7 @@
 
 # PortPirate
 
-Native macOS menu bar control center for local developer runtimes.
+The macOS menu bar tool that tells you which AI agent started that local server.
 
 [![CI](https://github.com/jx-grxf/PortPirate/actions/workflows/ci.yml/badge.svg)](https://github.com/jx-grxf/PortPirate/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/jx-grxf/PortPirate?label=release)](https://github.com/jx-grxf/PortPirate/releases/latest)
@@ -12,194 +12,115 @@ Native macOS menu bar control center for local developer runtimes.
 
 <img src="Assets/AppIcon/AppIcon1024.png" alt="PortPirate app icon" width="112">
 
-[Download latest preview](https://github.com/jx-grxf/PortPirate/releases/latest) | [Release runbook](docs/release.md) | [Security](SECURITY.md)
+[Download](https://github.com/jx-grxf/PortPirate/releases/latest) · [Release runbook](docs/release.md) · [Security](SECURITY.md) · [Architecture decisions](docs/)
 
 </div>
 
 > [!TIP]
-> PortPirate is built for the exact moment when: "What the hell is running on port 3000?" "What dev server is blocking port 5050?" "What localhost instances are running?"
+> Built for the exact moment when you ask "what the hell is running on port 3000?" and the answer turns out to be a `next dev` that Claude Code spun up two hours ago and forgot about.
+
+## What PortPirate does that nothing else does
+
+**Agent attribution.** Every listening port is labeled with the AI agent that started it — Claude, Cursor, Codex, opencode, Aider, and others. Detection runs on three signals (env vars, parent process chain, argv basename) with a confidence badge so you know whether it is proven or a guess. No competitor does this.
+
+**Workspace stacks.** When three or four servers run inside the same git repo — frontend, API, worker, DB — PortPirate collapses them into a single stack card with the branch name, a `mixed branches` warning when they disagree, and a `Stop all` button. Worktrees group separately by path, so concurrent agent worktrees stay visually distinct.
+
+**Editor helpers get out of the way.** VS Code / Cursor / Windsurf / Zed / JetBrains helper processes collapse into their own disclosure section so they stop drowning your actual dev servers.
+
+Everything else (port discovery, collision diagnosis, graceful stop with revalidation, package-script profiles, launchd visibility, Sparkle updates) is in there too — but those are table stakes, not the reason to install.
 
 ## Showcase
 
 <p align="center">
-  <img src="docs/assets/portpirate-showcase.png" alt="PortPirate menu bar runtime panel showing local runtimes, warnings, diagnostics, and system listeners" width="720">
+  <img src="docs/assets/portpirate-showcase.png" alt="PortPirate menu bar runtime panel" width="720">
 </p>
-
-PortPirate stays in the macOS menu bar and gives local development servers a visible control surface: scan active ports, identify the owning process, open the right localhost URL, diagnose collisions, and stop exact PIDs without broad destructive commands.
-
-It is intentionally local-first. There is no account, cloud sync, analytics pipeline, or backend service.
-
-## Contents
-
-- [Highlights](#highlights)
-- [Download](#download)
-- [Install](#install)
-- [First Launch](#first-launch)
-- [What Works Today](#what-works-today)
-- [Safety and Trust](#safety-and-trust)
-- [Why This Exists](#why-this-exists)
-- [Current Workflow](#current-workflow)
-- [Tech Stack](#tech-stack)
-- [Requirements](#requirements)
-- [Quick Start](#quick-start)
-- [Usage](#usage)
-- [Development](#development)
-- [Release Process](#release-process)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
-
-## Highlights
-
-| Feature | Description |
-| --- | --- |
-| Menu bar first | Keeps local runtimes visible without becoming another full-time desktop window. |
-| Port discovery | Maps listening TCP ports to process IDs, commands, owners, working directories, and likely runtimes. |
-| Collision diagnosis | Explains common causes like busy ports, Vite fallback ports, Next.js defaults, and AirPlay conflicts. |
-| Precise process control | Opens URLs, sends SIGTERM to exact PIDs, and gates force kill behind an explicit confirmation. |
-| Workspace profiles | Reads `package.json` scripts and detects npm, pnpm, yarn, or bun from lockfiles. |
-| Native macOS shell | Uses SwiftUI, `MenuBarExtra`, Settings, and a dedicated runtime browser instead of a web wrapper. |
-
-## Download
-
-The current preview DMG is attached to the latest GitHub Release:
-
-[Download PortPirate from GitHub Releases](https://github.com/jx-grxf/PortPirate/releases/latest)
-
-> [!IMPORTANT]
-> Preview builds are ad-hoc signed for bundle integrity but are not Developer ID notarized yet. macOS may show a Gatekeeper warning until notarized releases ship.
 
 ## Install
 
-1. Download the latest `PortPirate-<version>.dmg` from GitHub Releases.
+1. Download the latest `PortPirate-<version>.dmg` from [GitHub Releases](https://github.com/jx-grxf/PortPirate/releases/latest).
 2. Open the DMG and drag `PortPirate.app` into Applications.
-3. Launch PortPirate from Applications. It appears in the menu bar, not the Dock.
-4. If macOS blocks the preview build, right-click `PortPirate.app`, choose Open, then confirm Open again.
+3. Launch from Applications. PortPirate lives in the menu bar, not the Dock.
+4. First launch on a preview build: right-click `PortPirate.app` → Open → confirm. Developer ID notarization is queued for the first paid release.
 
-PortPirate currently ships as a preview build. Developer ID notarization, a Homebrew Cask, and fully automatic public distribution are on the roadmap.
+Requires macOS 14 or newer. No account, no cloud sync, no analytics, no backend.
 
-## First Launch
+## How attribution works
 
-After launch, click the PortPirate menu bar icon. The panel shows active local runtimes, warnings, and a port diagnosis field. Use Settings to add workspace folders, enable notifications, choose an update channel, and control which system listeners appear.
+Three signals, in order of confidence:
 
-If the app seems invisible, check the right side of the macOS menu bar. PortPirate intentionally stays out of the Dock so it behaves like a lightweight developer utility.
+1. **Environment** — known marker variables in the spawned process's env (`CLAUDECODE`, `CLAUDE_CODE_*`, `CURSOR_*`, `CODEX_*`, `OPENCODE_*`, `AIDER_*`, `GEMINI_CLI_*`, `COPILOT_*`, `AUGMENT_*`, `QWEN_CODE_*`). Strongest signal. Badge renders filled.
+2. **Parent chain** — the process's PID chain still leads to a known agent executable. Reliable for direct shell-children; breaks when a service is reparented to launchd (brew services, docker daemon, `nohup`). Badge renders outlined.
+3. **Argv basename** — the process's own `argv[0]` matches a known agent. Rare in practice. Badge renders dashed with a `~` prefix.
 
-## What Works Today
+When none match but the parent is an interactive shell, the owner is **manual**. Otherwise **unknown**. PortPirate deliberately does not claim attribution for detached services it cannot prove — that gap is covered by the workspace-stack view, which correlates listeners by repo without asserting ownership.
 
-- Detect listening TCP ports using macOS-native command line tools.
-- Map ports to process IDs, commands, users, and working directories.
-- Classify common local runtimes such as Vite, Next.js, Astro, Nuxt, Bun, pnpm, yarn, npm, Docker, Homebrew, and AirPlay-like system ports.
-- Diagnose a specific busy port from the menu bar.
-- Open localhost URLs and stop validated developer-runtime PIDs.
-- Read `package.json` scripts from saved workspace folders.
-- Show launchd user agents read-only.
-- Send local notifications for scan failures, expected missing ports, warning transitions, and managed script failures.
-- Check for Sparkle updates from GitHub Releases when release signing keys are configured.
+See [ADR-001](docs/adr-001-agent-attribution.md) for the full decision model and the [per-agent audit log](docs/agent-env-audits/) for what is verified on which version.
 
-## Safety and Trust
+## Safety
 
-PortPirate is local-only. It does not collect analytics, upload process data, or use a backend service.
+Process control is intentionally narrow:
 
-Process control is deliberately narrow:
+- Graceful stop revalidates the listener, command, owner, and working directory before sending SIGTERM.
+- Force kill is an explicit destructive action, gated behind a confirmation dialog.
+- No `killall`. No broad workspace or git destruction.
+- System-looking services (Apple, Docker, Homebrew, launchd) are flagged with an explanation before any action is suggested.
+- Workspace scripts only run on user action and inherit a filtered environment by default.
+- Env-variable inspection is whitelisted by prefix — there is no general dump of subprocess environments.
 
-- No `killall node`.
-- No broad destructive git or workspace actions.
-- Normal stop revalidates the listener, command, owner, and working directory before sending SIGTERM.
-- Force kill is an explicit destructive action with confirmation.
-- System-looking services such as AirPlay, Docker, and Homebrew are explained before action is suggested.
-- Workspace scripts only run after user action. They are project-owned `package.json` commands, so review scripts before launching unfamiliar folders.
-- Script environment variables are filtered so common shell secrets are not passed through by default.
-
-## Why This Exists
-
-Local development on macOS gets messy fast: `npm run dev` exits, a server keeps running, port 3000 is busy, Vite silently moves to another port, or AirPlay owns port 5000. PortPirate makes those local runtimes visible and actionable from one native macOS surface.
-
-## Current Workflow
-
-1. Open PortPirate from the menu bar.
-2. Scan active listening ports and detected runtimes.
-3. Open a localhost URL, diagnose a busy port, or stop a specific process.
-4. Add workspace folders and run package scripts from saved profiles.
-
-## Tech Stack
-
-| Layer | Choice |
-| --- | --- |
-| App | SwiftUI, macOS 14+ |
-| UI shell | `MenuBarExtra`, `Settings`, optional runtime window |
-| State | Observation (`@Observable`) |
-| Runtime discovery | `lsof`, `ps`, `launchctl` |
-| Project model | Swift Package Manager, Xcode-openable |
-| CI | GitHub Actions on macOS |
-| Tests | Swift Testing via XCTest |
-
-## Requirements
-
-For users:
-
-- macOS 14 or newer
-
-For development:
-
-- macOS 14 or newer
-- Xcode 15+ or Apple Swift toolchain
-- Command line tools with `swift`, `lsof`, `ps`, and `launchctl`
-- `create-dmg`, `hdiutil`, `codesign`, and Sparkle signing keys for local release packaging
-
-## Build from Source
+## Build from source
 
 ```bash
+git clone https://github.com/jx-grxf/PortPirate.git
+cd PortPirate
+swift build
+swift test
 ./script/build_and_run.sh
 ```
 
-The script builds PortPirate, stages `dist/PortPirate.app`, and launches the app bundle.
+The scanner, parser, classifier, process-control, profile, and stack-grouping logic live in `PortPirateCore` so they are testable without launching the app. Tests: 50 and counting.
 
-To create a local preview DMG:
+To build a local DMG:
 
 ```bash
 PORTPIRATE_VERSION=0.2.2 ./script/package_dmg.sh
 ```
 
-## Usage
+## Verifying agent detection on your machine
 
-- Click the menu bar icon to see current localhost runtimes.
-- Use the port field to diagnose a busy port.
-- Add project folders in Settings to discover scripts.
-- Start scripts from workspace profiles.
-- Use graceful stop first; force kill is guarded by confirmation.
-
-## Development
+If you want to confirm how PortPirate sees a specific coding agent, run the audit script from inside that agent's shell session:
 
 ```bash
-swift build
-swift test
-./script/build_and_run.sh --verify
+./script/audit_agent_env.sh
 ```
 
-The scanner, parser, classifier, process-control, and profile logic live in `PortPirateCore` so they can be tested without launching the app.
+It prints the matching env vars currently exported in the shell and lists which agent CLIs are installed on `PATH`. Use the output to either confirm the detection rule fires for that agent or to file an audit note in [`docs/agent-env-audits/`](docs/agent-env-audits/).
 
-## Release Process
+## Release pipeline
 
-Tagged releases are built by GitHub Actions. The release workflow builds a release-mode app bundle, creates a DMG, creates Sparkle ZIP/appcast assets, verifies the app signature and disk image, uploads artifacts, and attaches release assets to the GitHub Release.
+GitHub Actions builds tagged releases: app bundle, DMG, Sparkle ZIP and appcast, signature verification, and (once Developer ID is configured) notarization + stapler validation. Full runbook in [docs/release.md](docs/release.md). Public release notes live in [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
-Release details live in [docs/release.md](docs/release.md). Public release notes are kept in [RELEASE_NOTES.md](RELEASE_NOTES.md).
+Distribution roadmap:
+
+- Developer ID signing and notarization once Apple Developer enrollment lands.
+- [Homebrew Cask](docs/distribution/homebrew.md) submission to the main `homebrew-cask` tap after the first notarized release.
+- License switch from MIT to [FSL-1.1-MIT](docs/adr-003-licensing.md) in the same window.
 
 ## Roadmap
 
-- Short demo clip and notarized installer walkthrough
-- Developer ID signed and notarized preview releases
-- Homebrew Cask
-- Public Sparkle update feed with signed stable and beta channels
-- Collision and crash notification history
-- Advanced workspace orchestration
-- Exportable team profiles
+- **Smart actions** — per-service shutdown (docker stop / brew services stop / launchctl unload / graceful SIGINT→SIGTERM→SIGKILL) instead of one-size-fits-all kill.
+- **Stale auto-sweep** — opt-in setting to clean up servers that have been idle past a threshold.
+- **Workspace Stacks v2** — declared stacks via `portpirate.yml`, `docker-compose.yml` import, "Adopt running" on stack start, health-check polling, "Restart only failed".
+- **Runtime browser polish** — topology view, per-service log tabs, "Open in editor".
+- **Pricing tier** — passive stack grouping and agent attribution stay free; Stacks v2, Smart Actions, and auto-sweep belong to the paid tier.
+
+## Tech stack
+
+SwiftUI · macOS 14+ · `MenuBarExtra` · `@Observable` · pure-Swift discovery via `proc_pidinfo` + `KERN_PROCARGS2` (no subprocess shells for the hot path) · Swift Package Manager · GitHub Actions on macOS · Sparkle for updates.
 
 ## Contributing
 
-Issues and focused pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), keep changes scoped, and run `swift test` before opening a PR.
-
-Security reports should follow [SECURITY.md](SECURITY.md).
+Issues and focused pull requests welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md), keep changes scoped, run `swift test` before opening a PR. Security reports go through [SECURITY.md](SECURITY.md).
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT today. See [LICENSE](LICENSE). The next paid release will switch to FSL-1.1-MIT with two-year auto-conversion back to MIT — rationale in [ADR-003](docs/adr-003-licensing.md). Everything published under MIT stays available under MIT.
