@@ -12,3 +12,5 @@
 *.dSYM/
 /.patchpilot/
 /.commandcode/
+/.codex/
+.codexignore

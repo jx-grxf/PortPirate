@@ -12,7 +12,7 @@ The macOS menu bar tool that tells you which AI agent started that local server.
 
 <img src="Assets/AppIcon/AppIcon1024.png" alt="PortPirate app icon" width="112">
 
-[Download](https://github.com/jx-grxf/PortPirate/releases/latest) · [Release runbook](docs/release.md) · [Security](SECURITY.md) · [Architecture decisions](docs/)
+[Download](https://github.com/jx-grxf/PortPirate/releases/latest) · [Architecture](ARCHITECTURE.md) · [Release runbook](docs/release.md) · [Security](SECURITY.md) · [Decisions](docs/)
 
 </div>
 
