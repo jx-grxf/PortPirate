@@ -108,13 +108,51 @@ public struct MenuBarPanelView: View {
       if appState.developerServers.isEmpty {
         EmptyStateRow(title: "No listening dev ports", subtitle: "Start a server and PortPirate will pick it up.")
       } else {
-        ForEach(appState.developerServers.prefix(8)) { server in
-          ServerRowView(appState: appState, server: server)
+        filterChips
+        let filtered = appState.visibleDeveloperServers
+        if filtered.isEmpty {
+          EmptyStateRow(
+            title: "No matches for current filter",
+            subtitle: appState.filterAIAgentsOnly && appState.filterStaleOnly
+              ? "No AI-agent processes older than 30 minutes."
+              : appState.filterAIAgentsOnly
+                ? "No AI-agent processes detected right now."
+                : "No processes older than 30 minutes."
+          )
+        } else {
+          ForEach(filtered.prefix(8)) { server in
+            ServerRowView(appState: appState, server: server)
+          }
         }
       }
 
       if let diagnostic = appState.diagnosticResult {
         DiagnosticCard(result: diagnostic)
+      }
+    }
+  }
+
+  @ViewBuilder
+  private var filterChips: some View {
+    let showAgent = appState.hasAgentDetectedServers || appState.filterAIAgentsOnly
+    let showStale = appState.hasStaleServers || appState.filterStaleOnly
+    if showAgent || showStale {
+      HStack(spacing: Theme.s2) {
+        if showAgent {
+          FilterChip(
+            label: "AI agents",
+            systemImage: "sparkles",
+            isOn: $appState.filterAIAgentsOnly
+          )
+        }
+        if showStale {
+          FilterChip(
+            label: "Stale >30m",
+            systemImage: "clock.badge.exclamationmark",
+            isOn: $appState.filterStaleOnly
+          )
+        }
+        Spacer()
       }
     }
   }
@@ -287,6 +325,38 @@ public struct MenuBarPanelView: View {
     if count == 0 { return "No dev runtimes\(listenerText)" }
     if warnings == 0 { return "\(count) active\(listenerText)" }
     return "\(count) active, \(warnings) warning\(warnings == 1 ? "" : "s")\(listenerText)"
+  }
+}
+
+struct FilterChip: View {
+  let label: String
+  let systemImage: String
+  @Binding var isOn: Bool
+
+  var body: some View {
+    Button {
+      isOn.toggle()
+    } label: {
+      HStack(spacing: 4) {
+        Image(systemName: systemImage)
+        Text(label)
+      }
+      .font(.caption.weight(.semibold))
+      .foregroundStyle(isOn ? Color.accentColor : .secondary)
+      .padding(.horizontal, 8)
+      .padding(.vertical, 3)
+      .background(
+        Capsule().fill(isOn ? Color.accentColor.opacity(0.16) : Color.primary.opacity(0.04))
+      )
+      .overlay(
+        Capsule().strokeBorder(
+          isOn ? Color.accentColor.opacity(0.5) : Color.primary.opacity(0.08),
+          lineWidth: 0.5
+        )
+      )
+    }
+    .buttonStyle(.plain)
+    .help(isOn ? "Showing only \(label)" : "Filter: \(label)")
   }
 }
 

@@ -14,6 +14,9 @@ public final class AppState {
   public var diagnosisPortText = ""
   public var isRefreshing = false
   public var errorMessage: String?
+  public var filterAIAgentsOnly = false
+  public var filterStaleOnly = false
+  public static let staleThreshold: TimeInterval = 30 * 60
   public var notificationAuthorization: PortPirateNotificationAuthorization = .unknown
 
   public var refreshInterval: Double {
@@ -119,6 +122,38 @@ public final class AppState {
 
   public var developerServers: [ListeningServer] {
     servers.filter(\.isPrimaryRuntime)
+  }
+
+  public var visibleDeveloperServers: [ListeningServer] {
+    developerServers.filter(passesActiveFilters)
+  }
+
+  public var hasAgentDetectedServers: Bool {
+    developerServers.contains { AppState.isAIAgent($0) }
+  }
+
+  public var hasStaleServers: Bool {
+    developerServers.contains { AppState.isStale($0) }
+  }
+
+  public var hasActiveFilter: Bool {
+    filterAIAgentsOnly || filterStaleOnly
+  }
+
+  private func passesActiveFilters(_ server: ListeningServer) -> Bool {
+    if filterAIAgentsOnly, !AppState.isAIAgent(server) { return false }
+    if filterStaleOnly, !AppState.isStale(server) { return false }
+    return true
+  }
+
+  public nonisolated static func isAIAgent(_ server: ListeningServer) -> Bool {
+    if case .aiAgent = server.process?.owner { return true }
+    return false
+  }
+
+  public nonisolated static func isStale(_ server: ListeningServer, now: Date = Date()) -> Bool {
+    guard let startedAt = server.process?.startedAt else { return false }
+    return now.timeIntervalSince(startedAt) >= staleThreshold
   }
 
   public var backgroundServers: [ListeningServer] {

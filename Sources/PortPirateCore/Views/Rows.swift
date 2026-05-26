@@ -62,8 +62,11 @@ struct ServerRowView: View {
           Text(":\(server.displayPort)")
             .font(.callout.monospacedDigit())
             .foregroundStyle(.secondary)
+          if let owner = OwnerPresentation(server: server) {
+            OwnerBadge(owner: owner)
+          }
         }
-        Text(server.workspaceName)
+        Text(secondaryLine)
           .font(.caption)
           .foregroundStyle(.secondary)
           .lineLimit(1)
@@ -123,6 +126,113 @@ struct ServerRowView: View {
     } else {
       Task { await appState.stop(server: server, force: true) }
     }
+  }
+
+  private var secondaryLine: String {
+    var parts: [String] = []
+    if let git = server.process?.gitContext {
+      var label = git.repoRoot.lastPathComponent
+      if let branch = git.branch, !branch.isEmpty {
+        label += " · \(branch)"
+      }
+      if git.isWorktree {
+        label += " · worktree"
+      }
+      parts.append(label)
+    } else {
+      parts.append(server.workspaceName)
+    }
+    if let age = RelativeAge.short(from: server.process?.startedAt) {
+      parts.append(age)
+    }
+    return parts.joined(separator: "  ·  ")
+  }
+}
+
+struct OwnerPresentation: Equatable {
+  let label: String
+  let tooltip: String
+  let tint: Color
+
+  init?(server: ListeningServer) {
+    guard let owner = server.process?.owner, case .aiAgent(let kind, let sessionID) = owner else {
+      return nil
+    }
+    self.label = kind.displayName
+    self.tint = kind.tint
+    var tooltipParts: [String] = ["Started by \(kind.displayName)"]
+    if let sessionID, !sessionID.isEmpty {
+      tooltipParts.append("session \(sessionID)")
+    }
+    if let cwd = server.process?.currentDirectory {
+      tooltipParts.append(cwd)
+    }
+    self.tooltip = tooltipParts.joined(separator: " · ")
+  }
+}
+
+struct OwnerBadge: View {
+  let owner: OwnerPresentation
+
+  var body: some View {
+    Text(owner.label)
+      .font(.caption2.weight(.semibold))
+      .foregroundStyle(owner.tint)
+      .padding(.horizontal, 6)
+      .padding(.vertical, 1)
+      .background(owner.tint.opacity(0.14), in: Capsule())
+      .overlay(Capsule().strokeBorder(owner.tint.opacity(0.28), lineWidth: 0.5))
+      .help(owner.tooltip)
+  }
+}
+
+extension AgentKind {
+  var displayName: String {
+    switch self {
+    case .claudeCode: return "Claude"
+    case .cursor: return "Cursor"
+    case .codex: return "Codex"
+    case .windsurf: return "Windsurf"
+    case .aider: return "Aider"
+    case .opencode: return "opencode"
+    case .gemini: return "Gemini"
+    case .copilot: return "Copilot"
+    case .augment: return "Augment"
+    case .qwenCode: return "Qwen"
+    case .vsCodeAgent: return "VS Code"
+    case .other: return "Agent"
+    }
+  }
+
+  var tint: Color {
+    switch self {
+    case .claudeCode: return .orange
+    case .cursor: return .purple
+    case .codex: return .green
+    case .windsurf: return .teal
+    case .aider: return .brown
+    case .opencode: return .indigo
+    case .gemini: return .pink
+    case .copilot: return .mint
+    case .augment: return .yellow
+    case .qwenCode: return .red
+    case .vsCodeAgent: return .blue
+    case .other: return .gray
+    }
+  }
+}
+
+enum RelativeAge {
+  static func short(from date: Date?, now: Date = Date()) -> String? {
+    guard let date else { return nil }
+    let seconds = max(0, Int(now.timeIntervalSince(date)))
+    if seconds < 60 { return "\(seconds)s" }
+    let minutes = seconds / 60
+    if minutes < 60 { return "\(minutes)m" }
+    let hours = minutes / 60
+    if hours < 24 { return "\(hours)h" }
+    let days = hours / 24
+    return "\(days)d"
   }
 }
 
