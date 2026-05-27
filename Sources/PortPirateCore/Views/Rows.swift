@@ -350,6 +350,12 @@ extension AgentKind {
     case .copilot: return "Copilot"
     case .augment: return "Augment"
     case .qwenCode: return "Qwen"
+    case .antigravity: return "Antigravity"
+    case .goose: return "Goose"
+    case .cline: return "Cline"
+    case .kimi: return "Kimi"
+    case .hermes: return "Hermes"
+    case .openclaw: return "OpenClaw"
     case .other: return "Agent"
     }
   }
@@ -366,6 +372,12 @@ extension AgentKind {
     case .copilot: return .mint
     case .augment: return .yellow
     case .qwenCode: return .red
+    case .antigravity: return .blue
+    case .goose: return .cyan
+    case .cline: return .indigo
+    case .kimi: return .orange
+    case .hermes: return .purple
+    case .openclaw: return .red
     case .other: return .gray
     }
   }
@@ -411,12 +423,14 @@ struct ProfileRowView: View {
         ScrollView(.horizontal, showsIndicators: false) {
           HStack(spacing: 6) {
             ForEach(profile.scripts.prefix(3)) { script in
+              let isActive = appState.isScriptActive(script, in: profile)
               Button(script.name) {
                 appState.startScript(script, in: profile)
               }
               .controlSize(.small)
               .lineLimit(1)
-              .help(script.command)
+              .disabled(isActive)
+              .help(isActive ? "\(script.name) is already running" : script.command)
             }
           }
         }
@@ -461,7 +475,7 @@ struct RunningScriptRow: View {
         Text("\(script.profileName): \(script.scriptName)")
           .font(.caption)
           .lineLimit(1)
-        Text("PID \(script.processID) • \(script.lines.last ?? "waiting for output")")
+        Text("PID \(script.processID) • \(script.lines.last ?? script.processSourceLabel)")
           .font(.caption)
           .foregroundStyle(.secondary)
           .lineLimit(1)
@@ -482,5 +496,11 @@ struct RunningScriptRow: View {
     }
     .padding(8)
     .panelRowBackground()
+  }
+}
+
+private extension RunningScript {
+  var processSourceLabel: String {
+    isManaged ? "waiting for output" : "detected from workspace process"
   }
 }

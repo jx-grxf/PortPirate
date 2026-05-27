@@ -23,5 +23,23 @@ public enum AgentKind: String, Codable, Sendable {
   case copilot
   case augment
   case qwenCode
+  case antigravity
+  case goose
+  case cline
+  case kimi
+  case hermes
+  case openclaw
   case other
+
+  public var category: AgentCategory {
+    switch self {
+    case .hermes, .openclaw: return .assistant
+    default: return .coding
+    }
+  }
+}
+
+public enum AgentCategory: String, Codable, Sendable {
+  case coding
+  case assistant
 }

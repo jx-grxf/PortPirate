@@ -26,7 +26,7 @@ final class ProcessControllerTests: XCTestCase {
     XCTAssertNil(environment["SSH_AUTH_SOCK"])
     XCTAssertEqual(
       environment["PATH"],
-      "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/johannes/.volta/bin:/custom/bin"
+      "/Users/johannes/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/johannes/.volta/bin:/custom/bin"
     )
   }
 }

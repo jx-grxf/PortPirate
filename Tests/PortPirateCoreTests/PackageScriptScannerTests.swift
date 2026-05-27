@@ -38,6 +38,26 @@ final class PackageScriptScannerTests: XCTestCase {
     XCTAssertEqual(PackageScriptScanner.expectedPorts(from: scripts), [3000, 4322, 5174])
   }
 
+  func testPackageManagerFieldWinsWhenNoLockfileExists() throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+
+    try """
+    {
+      "name": "declared-pnpm-app",
+      "packageManager": "pnpm@10.0.0",
+      "scripts": {
+        "dev": "vite"
+      }
+    }
+    """.write(to: directory.appendingPathComponent("package.json"), atomically: true, encoding: .utf8)
+
+    let profile = try PackageScriptScanner.scanWorkspace(at: directory)
+
+    XCTAssertEqual(profile.packageManager, .pnpm)
+  }
+
   func testSwiftPackageFolderWithoutPackageJsonIsStillAdoptable() throws {
     let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

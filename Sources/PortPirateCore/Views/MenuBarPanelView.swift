@@ -107,30 +107,39 @@ public struct MenuBarPanelView: View {
     VStack(alignment: .leading, spacing: Theme.s2) {
       SectionHeader(title: "Local runtimes", systemImage: "server.rack")
 
-      if appState.developerServers.isEmpty {
+      if appState.developerServers.isEmpty && appState.manualWorkspaceRuntimeScripts.isEmpty {
         EmptyStateRow(title: emptyStateTitle, subtitle: emptyStateSubtitle)
       } else {
-        filterChips
-        let grouped = appState.groupedDeveloperServers
-        if grouped.stacks.isEmpty && grouped.ungrouped.isEmpty {
-          EmptyStateRow(
-            title: "No matches for current filter",
-            subtitle: appState.filterAIAgentsOnly && appState.filterStaleOnly
-              ? "No AI-agent processes older than 30 minutes."
-              : appState.filterAIAgentsOnly
-                ? "No AI-agent processes detected right now."
-                : "No processes older than 30 minutes."
-          )
-        } else {
-          let rowCap = 8
-          ForEach(grouped.stacks) { stack in
-            StackCardView(appState: appState, stack: stack)
+        if !appState.developerServers.isEmpty {
+          filterChips
+          let grouped = appState.groupedDeveloperServers
+          if grouped.stacks.isEmpty && grouped.ungrouped.isEmpty {
+            EmptyStateRow(
+              title: "No matches for current filter",
+              subtitle: filterEmptySubtitle
+            )
+          } else {
+            let rowCap = 8
+            ForEach(grouped.stacks) { stack in
+              StackCardView(appState: appState, stack: stack)
+            }
+            ForEach(grouped.ungrouped.prefix(rowCap)) { server in
+              ServerRowView(appState: appState, server: server)
+            }
+            if grouped.ungrouped.count > rowCap {
+              MoreRow(count: grouped.ungrouped.count - rowCap, total: grouped.ungrouped.count)
+            }
           }
-          ForEach(grouped.ungrouped.prefix(rowCap)) { server in
-            ServerRowView(appState: appState, server: server)
-          }
-          if grouped.ungrouped.count > rowCap {
-            MoreRow(count: grouped.ungrouped.count - rowCap, total: grouped.ungrouped.count)
+        }
+
+        if !appState.manualWorkspaceRuntimeScripts.isEmpty {
+          VStack(alignment: .leading, spacing: Theme.s2) {
+            if !appState.developerServers.isEmpty {
+              SectionHeader(title: "Workspace scripts", systemImage: "terminal")
+            }
+            ForEach(appState.manualWorkspaceRuntimeScripts) { script in
+              RunningScriptRow(appState: appState, script: script)
+            }
           }
         }
       }
@@ -156,17 +165,34 @@ public struct MenuBarPanelView: View {
     return "Listeners are hiding in the disclosures below: \(other) total."
   }
 
+  private var filterEmptySubtitle: String {
+    var parts: [String] = []
+    if appState.filterAIAgentsOnly { parts.append("AI coding agents") }
+    if appState.filterAssistantsOnly { parts.append("always-on assistants") }
+    if appState.filterStaleOnly { parts.append("processes older than 30 minutes") }
+    if parts.isEmpty { return "No matching processes." }
+    return "No " + parts.joined(separator: " + ") + " right now."
+  }
+
   @ViewBuilder
   private var filterChips: some View {
     let showAgent = appState.hasAgentDetectedServers || appState.filterAIAgentsOnly
+    let showAssistant = appState.hasAssistantServers || appState.filterAssistantsOnly
     let showStale = appState.hasStaleServers || appState.filterStaleOnly
-    if showAgent || showStale {
+    if showAgent || showAssistant || showStale {
       HStack(spacing: Theme.s2) {
         if showAgent {
           FilterChip(
             label: "AI agents",
             systemImage: "sparkles",
             isOn: $appState.filterAIAgentsOnly
+          )
+        }
+        if showAssistant {
+          FilterChip(
+            label: "Always-on",
+            systemImage: "infinity",
+            isOn: $appState.filterAssistantsOnly
           )
         }
         if showStale {
@@ -314,10 +340,10 @@ public struct MenuBarPanelView: View {
     VStack(alignment: .leading, spacing: Theme.s2) {
       SectionHeader(title: "Started by PortPirate", systemImage: "doc.text.magnifyingglass")
 
-      if appState.runningScripts.isEmpty {
+      if appState.visibleManagedScripts.isEmpty {
         EmptyStateRow(title: "No managed logs", subtitle: "Logs appear for scripts launched by PortPirate.")
       } else {
-        ForEach(appState.runningScripts) { script in
+        ForEach(appState.visibleManagedScripts) { script in
           RunningScriptRow(appState: appState, script: script)
         }
       }
@@ -369,7 +395,7 @@ public struct MenuBarPanelView: View {
     if let errorMessage = appState.errorMessage {
       return errorMessage
     }
-    let count = appState.developerServers.count
+    let count = appState.developerServers.count + appState.manualWorkspaceRuntimeScripts.count + appState.visibleManagedScripts.filter(\.isRunning).count
     let otherCount = appState.backgroundServers.count + appState.editorHelperServers.count
     let warnings = appState.warningCount
     let listenerText = otherCount == 0 ? "" : ", \(otherCount) other"

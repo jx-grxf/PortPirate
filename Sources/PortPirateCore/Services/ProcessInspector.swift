@@ -258,6 +258,13 @@ public actor ProcessInspector {
         || key.hasPrefix("COPILOT_")
         || key.hasPrefix("AUGMENT_")
         || key.hasPrefix("QWEN_CODE_")
+        || key.hasPrefix("ANTIGRAVITY_")
+        || key.hasPrefix("HERMES_")
+        || key.hasPrefix("OPENCLAW_")
+        || key.hasPrefix("CLAW_")
+        || key.hasPrefix("GOOSE_")
+        || key.hasPrefix("CLINE_")
+        || key.hasPrefix("KIMI_")
         || key.hasPrefix("npm_")
         || key.hasPrefix("VSCODE_")
     }

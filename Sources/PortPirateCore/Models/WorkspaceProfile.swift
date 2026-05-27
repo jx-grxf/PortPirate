@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 public enum PackageManager: String, Codable, CaseIterable, Sendable {
@@ -71,5 +72,19 @@ public struct WorkspaceProfile: Identifiable, Hashable, Codable, Sendable {
     self.packageManager = packageManager
     self.scripts = scripts
     self.expectedPorts = expectedPorts
+  }
+
+  public static func stableID(for path: String) -> UUID {
+    let digest = SHA256.hash(data: Data(path.utf8))
+    let bytes = Array(digest.prefix(16))
+    let uuidString = String(
+      format: "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+      bytes[0], bytes[1], bytes[2], bytes[3],
+      bytes[4], bytes[5],
+      bytes[6], bytes[7],
+      bytes[8], bytes[9],
+      bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]
+    )
+    return UUID(uuidString: uuidString) ?? UUID()
   }
 }
