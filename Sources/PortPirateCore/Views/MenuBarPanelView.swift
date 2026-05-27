@@ -135,7 +135,7 @@ public struct MenuBarPanelView: View {
         if !appState.manualWorkspaceRuntimeScripts.isEmpty {
           VStack(alignment: .leading, spacing: Theme.s2) {
             if !appState.developerServers.isEmpty {
-              SectionHeader(title: "Workspace scripts", systemImage: "terminal")
+              SectionHeader(title: "Package scripts", systemImage: "terminal")
             }
             ForEach(appState.manualWorkspaceRuntimeScripts) { script in
               RunningScriptRow(appState: appState, script: script)

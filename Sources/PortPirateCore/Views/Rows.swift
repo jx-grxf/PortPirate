@@ -73,21 +73,12 @@ struct StackCardView: View {
       } label: {
         header
       }
+      if showingStopConfirmation {
+        inlineStopConfirmation
+      }
     }
     .padding(Theme.s3)
     .glassCard()
-    .confirmationDialog(
-      "Stop \(stack.servers.count) services in \(stack.name)?",
-      isPresented: $showingStopConfirmation,
-      titleVisibility: .visible
-    ) {
-      Button("Stop all", role: .destructive) {
-        Task { await appState.stopStack(stack) }
-      }
-      Button("Cancel", role: .cancel) {}
-    } message: {
-      Text(stack.servers.map { ":\($0.port)" }.joined(separator: ", "))
-    }
   }
 
   private var header: some View {
@@ -122,6 +113,33 @@ struct StackCardView: View {
       .help("Stop all services in \(stack.name)")
     }
     .contentShape(.rect)
+  }
+
+  private var inlineStopConfirmation: some View {
+    VStack(alignment: .leading, spacing: Theme.s2) {
+      Divider()
+      Text("Stop \(stack.servers.count) services in \(stack.name)?")
+        .font(.caption)
+        .fontWeight(.semibold)
+      Text(stack.servers.map { ":\($0.port)" }.joined(separator: ", "))
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .lineLimit(2)
+      HStack(spacing: Theme.s2) {
+        Spacer()
+        Button("Cancel") {
+          showingStopConfirmation = false
+        }
+        .buttonStyle(.bordered)
+        Button("Stop all", role: .destructive) {
+          showingStopConfirmation = false
+          Task { await appState.stopStack(stack) }
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(.red)
+      }
+    }
+    .padding(.top, Theme.s2)
   }
 
   private var subtitle: String {
@@ -501,6 +519,6 @@ struct RunningScriptRow: View {
 
 private extension RunningScript {
   var processSourceLabel: String {
-    isManaged ? "waiting for output" : "detected from workspace process"
+    isManaged ? "waiting for output" : "detected from local package script"
   }
 }

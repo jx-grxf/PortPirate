@@ -45,7 +45,7 @@ public actor WorkspaceProcessScanner {
           scriptName: scriptName,
           processID: row.pid,
           parentProcessID: row.parentID,
-          lines: ["detected from workspace process"],
+          lines: ["detected from local package script"],
           startedAt: row.startedAt ?? Date(),
           isRunning: true,
           isManaged: false
