@@ -18,6 +18,8 @@ jobs:
   build-release:
     runs-on: macos-26
     timeout-minutes: 30
+    env:
+      PORTPIRATE_NOTARY_ENABLED: ${{ secrets.PORTPIRATE_NOTARY_ENABLED }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -96,7 +98,6 @@ jobs:
       - name: Notarize DMG
         env:
           PORTPIRATE_VERSION: ${{ steps.version.outputs.version }}
-          PORTPIRATE_NOTARY_ENABLED: ${{ secrets.PORTPIRATE_NOTARY_ENABLED }}
           PORTPIRATE_NOTARY_KEYCHAIN_PROFILE: ${{ secrets.PORTPIRATE_NOTARY_KEYCHAIN_PROFILE }}
           PORTPIRATE_NOTARY_APPLE_ID: ${{ secrets.PORTPIRATE_NOTARY_APPLE_ID }}
           PORTPIRATE_NOTARY_TEAM_ID: ${{ secrets.PORTPIRATE_NOTARY_TEAM_ID }}
@@ -104,7 +105,7 @@ jobs:
         run: ./script/notarize_release.sh
 
       - name: Validate notarization staple
-        if: ${{ secrets.PORTPIRATE_NOTARY_ENABLED == 'true' }}
+        if: env.PORTPIRATE_NOTARY_ENABLED == 'true'
         env:
           PORTPIRATE_VERSION: ${{ steps.version.outputs.version }}
         run: xcrun stapler validate "dist/PortPirate-${PORTPIRATE_VERSION}.dmg"
