@@ -128,6 +128,75 @@ final class AgentDetectorTests: XCTestCase {
     XCTAssertEqual(detector.classify(context), .manual)
   }
 
+  func testClassifiesAntigravityFromEnvAndArgv() {
+    let detector = AgentDetector(parentExecutableName: { _ in nil })
+    XCTAssertEqual(
+      detector.classify(makeContext(envSubset: ["ANTIGRAVITY_API_KEY": "x"])),
+      .aiAgent(kind: .antigravity, sessionID: nil, source: .env)
+    )
+    XCTAssertEqual(
+      detector.classify(makeContext(argv: ["/Users/me/.local/bin/agy", "run"])),
+      .aiAgent(kind: .antigravity, sessionID: nil, source: .argv)
+    )
+  }
+
+  func testClassifiesHermesFromSessionEnvAndArgv() {
+    let detector = AgentDetector(parentExecutableName: { _ in nil })
+    XCTAssertEqual(
+      detector.classify(makeContext(envSubset: ["HERMES_SESSION_ID": "sess-7"])),
+      .aiAgent(kind: .hermes, sessionID: "sess-7", source: .env)
+    )
+    XCTAssertEqual(
+      detector.classify(makeContext(argv: ["/opt/homebrew/bin/hermes", "chat"])),
+      .aiAgent(kind: .hermes, sessionID: nil, source: .argv)
+    )
+  }
+
+  func testOpenClawEditorExtensionLeakageDoesNotTriggerDetection() {
+    let detector = AgentDetector(parentExecutableName: { _ in nil })
+    let context = makeContext(envSubset: [
+      "OPENCLAW_COPILOT_EDITOR_VERSION": "1.95.0",
+      "OPENCLAW_COPILOT_EDITOR_PLUGIN_VERSION": "0.32.0"
+    ])
+    XCTAssertEqual(detector.classify(context), .unknown)
+  }
+
+  func testClassifiesOpenClawFromEnvAndArgv() {
+    let detector = AgentDetector(parentExecutableName: { _ in nil })
+    XCTAssertEqual(
+      detector.classify(makeContext(envSubset: ["OPENCLAW_HOME": "/Users/me/.openclaw"])),
+      .aiAgent(kind: .openclaw, sessionID: nil, source: .env)
+    )
+    XCTAssertEqual(
+      detector.classify(makeContext(argv: ["/usr/local/bin/openclaw", "agent", "run"])),
+      .aiAgent(kind: .openclaw, sessionID: nil, source: .argv)
+    )
+  }
+
+  func testClassifiesGooseClineKimi() {
+    let detector = AgentDetector(parentExecutableName: { _ in nil })
+    XCTAssertEqual(
+      detector.classify(makeContext(envSubset: ["GOOSE_PROVIDER": "anthropic"])),
+      .aiAgent(kind: .goose, sessionID: nil, source: .env)
+    )
+    XCTAssertEqual(
+      detector.classify(makeContext(envSubset: ["CLINE_DIR": "/tmp/cline"])),
+      .aiAgent(kind: .cline, sessionID: nil, source: .env)
+    )
+    XCTAssertEqual(
+      detector.classify(makeContext(envSubset: ["KIMI_SHARE_DIR": "/tmp/kimi"])),
+      .aiAgent(kind: .kimi, sessionID: nil, source: .env)
+    )
+  }
+
+  func testAgentCategoryAssignsAlwaysOnAgentsCorrectly() {
+    XCTAssertEqual(AgentKind.hermes.category, .assistant)
+    XCTAssertEqual(AgentKind.openclaw.category, .assistant)
+    XCTAssertEqual(AgentKind.claudeCode.category, .coding)
+    XCTAssertEqual(AgentKind.antigravity.category, .coding)
+    XCTAssertEqual(AgentKind.goose.category, .coding)
+  }
+
   func testClassifiesUnknownWithoutSignals() {
     let detector = AgentDetector(parentExecutableName: { _ in nil })
 

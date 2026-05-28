@@ -73,21 +73,12 @@ struct StackCardView: View {
       } label: {
         header
       }
+      if showingStopConfirmation {
+        inlineStopConfirmation
+      }
     }
     .padding(Theme.s3)
     .glassCard()
-    .confirmationDialog(
-      "Stop \(stack.servers.count) services in \(stack.name)?",
-      isPresented: $showingStopConfirmation,
-      titleVisibility: .visible
-    ) {
-      Button("Stop all", role: .destructive) {
-        Task { await appState.stopStack(stack) }
-      }
-      Button("Cancel", role: .cancel) {}
-    } message: {
-      Text(stack.servers.map { ":\($0.port)" }.joined(separator: ", "))
-    }
   }
 
   private var header: some View {
@@ -122,6 +113,33 @@ struct StackCardView: View {
       .help("Stop all services in \(stack.name)")
     }
     .contentShape(.rect)
+  }
+
+  private var inlineStopConfirmation: some View {
+    VStack(alignment: .leading, spacing: Theme.s2) {
+      Divider()
+      Text("Stop \(stack.servers.count) services in \(stack.name)?")
+        .font(.caption)
+        .fontWeight(.semibold)
+      Text(stack.servers.map { ":\($0.port)" }.joined(separator: ", "))
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .lineLimit(2)
+      HStack(spacing: Theme.s2) {
+        Spacer()
+        Button("Cancel") {
+          showingStopConfirmation = false
+        }
+        .buttonStyle(.bordered)
+        Button("Stop all", role: .destructive) {
+          showingStopConfirmation = false
+          Task { await appState.stopStack(stack) }
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(.red)
+      }
+    }
+    .padding(.top, Theme.s2)
   }
 
   private var subtitle: String {
@@ -350,6 +368,12 @@ extension AgentKind {
     case .copilot: return "Copilot"
     case .augment: return "Augment"
     case .qwenCode: return "Qwen"
+    case .antigravity: return "Antigravity"
+    case .goose: return "Goose"
+    case .cline: return "Cline"
+    case .kimi: return "Kimi"
+    case .hermes: return "Hermes"
+    case .openclaw: return "OpenClaw"
     case .other: return "Agent"
     }
   }
@@ -366,6 +390,12 @@ extension AgentKind {
     case .copilot: return .mint
     case .augment: return .yellow
     case .qwenCode: return .red
+    case .antigravity: return .blue
+    case .goose: return .cyan
+    case .cline: return .indigo
+    case .kimi: return .orange
+    case .hermes: return .purple
+    case .openclaw: return .red
     case .other: return .gray
     }
   }
@@ -411,12 +441,14 @@ struct ProfileRowView: View {
         ScrollView(.horizontal, showsIndicators: false) {
           HStack(spacing: 6) {
             ForEach(profile.scripts.prefix(3)) { script in
+              let isActive = appState.isScriptActive(script, in: profile)
               Button(script.name) {
                 appState.startScript(script, in: profile)
               }
               .controlSize(.small)
               .lineLimit(1)
-              .help(script.command)
+              .disabled(isActive)
+              .help(isActive ? "\(script.name) is already running" : script.command)
             }
           }
         }
@@ -461,7 +493,7 @@ struct RunningScriptRow: View {
         Text("\(script.profileName): \(script.scriptName)")
           .font(.caption)
           .lineLimit(1)
-        Text("PID \(script.processID) • \(script.lines.last ?? "waiting for output")")
+        Text("PID \(script.processID) • \(script.lines.last ?? script.processSourceLabel)")
           .font(.caption)
           .foregroundStyle(.secondary)
           .lineLimit(1)
@@ -482,5 +514,11 @@ struct RunningScriptRow: View {
     }
     .padding(8)
     .panelRowBackground()
+  }
+}
+
+private extension RunningScript {
+  var processSourceLabel: String {
+    isManaged ? "waiting for output" : "detected from local package script"
   }
 }

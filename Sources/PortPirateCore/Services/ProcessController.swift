@@ -115,10 +115,11 @@ enum ProcessControllerEnvironment {
     var environment = base.filter { key, _ in
       allowedExactKeys.contains(key) || key.hasPrefix("LC_")
     }
+    let userLocalBin = (base["HOME"] ?? NSHomeDirectory()) + "/.local/bin"
     let existingPaths = (base["PATH"] ?? "")
       .split(separator: ":", omittingEmptySubsequences: true)
       .map(String.init)
-    let mergedPaths = (defaultToolPaths + existingPaths).reduce(into: [String]()) { result, path in
+    let mergedPaths = ([userLocalBin] + defaultToolPaths + existingPaths).reduce(into: [String]()) { result, path in
       if !result.contains(path) {
         result.append(path)
       }

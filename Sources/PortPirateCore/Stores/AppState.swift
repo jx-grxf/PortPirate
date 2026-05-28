@@ -9,6 +9,7 @@ public final class AppState {
   public var launchAgents: [LaunchAgentInfo] = []
   public var profiles: [WorkspaceProfile] = []
   public var runningScripts: [RunningScript] = []
+  public var workspaceDetectedScripts: [RunningScript] = []
   public var selectedServerID: ListeningServer.ID?
   public var diagnosticResult: DiagnosticResult?
   public var diagnosisPortText = ""
@@ -16,8 +17,9 @@ public final class AppState {
   public var errorMessage: String?
   public var workspaceMessage: WorkspaceMessage?
   public var filterAIAgentsOnly = false
+  public var filterAssistantsOnly = false
   public var filterStaleOnly = false
-  public static let staleThreshold: TimeInterval = 30 * 60
+  public nonisolated static let staleThreshold: TimeInterval = 30 * 60
   public var notificationAuthorization: PortPirateNotificationAuthorization = .unknown
 
   public var refreshInterval: Double {
@@ -71,6 +73,7 @@ public final class AppState {
   private let discoveryService: DiscoveryService
   private let profileStore: ProfileStore
   private let notificationService: NotificationService
+  private let workspaceProcessScanner: WorkspaceProcessScanner
   private var updateService: UpdateService?
   private let processController = ProcessController()
   private var refreshTask: Task<Void, Never>?
@@ -82,11 +85,13 @@ public final class AppState {
   public init(
     discoveryService: DiscoveryService = DiscoveryService(),
     profileStore: ProfileStore = ProfileStore(),
-    notificationService: NotificationService = NotificationService()
+    notificationService: NotificationService = NotificationService(),
+    workspaceProcessScanner: WorkspaceProcessScanner = WorkspaceProcessScanner()
   ) {
     self.discoveryService = discoveryService
     self.profileStore = profileStore
     self.notificationService = notificationService
+    self.workspaceProcessScanner = workspaceProcessScanner
     self.refreshInterval = UserDefaults.standard.object(forKey: Defaults.refreshInterval) as? Double ?? 4
     self.includeLaunchAgents = UserDefaults.standard.object(forKey: Defaults.includeLaunchAgents) as? Bool ?? true
     self.showStatusCount = UserDefaults.standard.object(forKey: Defaults.showStatusCount) as? Bool ?? true
@@ -108,7 +113,7 @@ public final class AppState {
   }
 
   public var status: RuntimeState {
-    if visibleServers.isEmpty { return .idle }
+    if visibleServers.isEmpty && visibleWorkspaceScripts.isEmpty { return .idle }
     if visibleServers.contains(where: { $0.warning != nil }) { return .warning }
     return .ok
   }
@@ -127,7 +132,7 @@ public final class AppState {
   }
 
   public var developerServers: [ListeningServer] {
-    servers.filter(\.isPrimaryRuntime)
+    servers.filter { $0.isPrimaryRuntime || Self.isWorkspaceProfileRuntime($0, profiles: profiles) }
   }
 
   public var visibleDeveloperServers: [ListeningServer] {
@@ -136,6 +141,28 @@ public final class AppState {
 
   public var groupedDeveloperServers: StackGrouper.GroupedServers {
     StackGrouper.group(visibleDeveloperServers)
+  }
+
+  public var visibleWorkspaceScripts: [RunningScript] {
+    manualWorkspaceRuntimeScripts + visibleManagedScripts
+  }
+
+  public var manualWorkspaceRuntimeScripts: [RunningScript] {
+    let managedPIDs = Set(runningScripts.map(\.processID))
+    let activeManagedKeys = Set(runningScripts.filter(\.isRunning).map(Self.scriptKey))
+    return workspaceDetectedScripts.filter {
+      !managedPIDs.contains($0.processID) && !activeManagedKeys.contains(Self.scriptKey($0))
+    }
+  }
+
+  public var visibleManagedScripts: [RunningScript] {
+    collapsedManagedScripts(runningScripts)
+  }
+
+  public func isScriptActive(_ script: PackageScript, in profile: WorkspaceProfile) -> Bool {
+    visibleWorkspaceScripts.contains {
+      $0.profileID == profile.id && $0.scriptName == script.name && $0.isRunning
+    }
   }
 
   public var developerStacks: [WorkspaceStack] {
@@ -165,7 +192,11 @@ public final class AppState {
   }
 
   public var hasAgentDetectedServers: Bool {
-    developerServers.contains { AppState.isAIAgent($0) }
+    developerServers.contains { AppState.isCodingAgent($0) }
+  }
+
+  public var hasAssistantServers: Bool {
+    developerServers.contains { AppState.isAssistantAgent($0) }
   }
 
   public var hasStaleServers: Bool {
@@ -173,11 +204,12 @@ public final class AppState {
   }
 
   public var hasActiveFilter: Bool {
-    filterAIAgentsOnly || filterStaleOnly
+    filterAIAgentsOnly || filterAssistantsOnly || filterStaleOnly
   }
 
   private func passesActiveFilters(_ server: ListeningServer) -> Bool {
-    if filterAIAgentsOnly, !AppState.isAIAgent(server) { return false }
+    if filterAIAgentsOnly, !AppState.isCodingAgent(server) { return false }
+    if filterAssistantsOnly, !AppState.isAssistantAgent(server) { return false }
     if filterStaleOnly, !AppState.isStale(server) { return false }
     return true
   }
@@ -187,9 +219,42 @@ public final class AppState {
     return false
   }
 
+  public nonisolated static func isCodingAgent(_ server: ListeningServer) -> Bool {
+    if case .aiAgent(let kind, _, _) = server.process?.owner {
+      return kind.category == .coding
+    }
+    return false
+  }
+
+  public nonisolated static func isAssistantAgent(_ server: ListeningServer) -> Bool {
+    if case .aiAgent(let kind, _, _) = server.process?.owner {
+      return kind.category == .assistant
+    }
+    return false
+  }
+
   public nonisolated static func isStale(_ server: ListeningServer, now: Date = Date()) -> Bool {
     guard let startedAt = server.process?.startedAt else { return false }
     return now.timeIntervalSince(startedAt) >= staleThreshold
+  }
+
+  public func isWorkspaceProfileRuntime(_ server: ListeningServer) -> Bool {
+    Self.isWorkspaceProfileRuntime(server, profiles: profiles)
+  }
+
+  public nonisolated static func isWorkspaceProfileRuntime(
+    _ server: ListeningServer,
+    profiles: [WorkspaceProfile]
+  ) -> Bool {
+    guard !server.isAppleService, !server.isEditorHelper else { return false }
+    guard let currentDirectory = server.process?.currentDirectory else { return false }
+    let currentURL = URL(fileURLWithPath: currentDirectory, isDirectory: true).standardizedFileURL
+
+    return profiles.contains { profile in
+      guard profile.expectedPorts.contains(server.port) else { return false }
+      let profileURL = URL(fileURLWithPath: profile.path, isDirectory: true).standardizedFileURL
+      return currentURL.path == profileURL.path || currentURL.path.hasPrefix(profileURL.path + "/")
+    }
   }
 
   public var backgroundServers: [ListeningServer] {
@@ -242,6 +307,7 @@ public final class AppState {
       let snapshot = try await discoveryService.scan(includeLaunchAgents: includeLaunchAgents)
       servers = snapshot.servers
       launchAgents = snapshot.launchAgents
+      workspaceDetectedScripts = await workspaceProcessScanner.scan(profiles: profiles)
       if selectedServerID == nil || !visibleServers.contains(where: { $0.id == selectedServerID }) {
         selectedServerID = visibleServers.first?.id
       }
@@ -287,7 +353,28 @@ public final class AppState {
   }
 
   public func loadProfiles() async {
-    profiles = await profileStore.load()
+    let storedProfiles = await profileStore.load()
+    profiles = Self.refreshedProfiles(storedProfiles)
+    if profiles != storedProfiles {
+      await profileStore.save(profiles)
+    }
+  }
+
+  public nonisolated static func refreshedProfiles(_ profiles: [WorkspaceProfile]) -> [WorkspaceProfile] {
+    profiles.map { profile in
+      guard let refreshed = try? PackageScriptScanner.scanWorkspace(at: URL(fileURLWithPath: profile.path, isDirectory: true)) else {
+        return profile
+      }
+      return WorkspaceProfile(
+        id: profile.id,
+        name: refreshed.name,
+        path: refreshed.path,
+        packageManager: refreshed.packageManager,
+        scripts: refreshed.scripts,
+        expectedPorts: refreshed.expectedPorts
+      )
+    }
+    .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
   }
 
   public func addWorkspace(url: URL) {
@@ -363,7 +450,7 @@ public final class AppState {
   }
 
   private func validatedStopTarget(for server: ListeningServer) async throws -> ListeningServer {
-    guard server.isPrimaryRuntime else {
+    guard server.isPrimaryRuntime || isWorkspaceProfileRuntime(server) else {
       throw ProcessControllerError.unsafeProcess(server.processID, "only local developer runtimes can be stopped")
     }
 
@@ -378,7 +465,7 @@ public final class AppState {
       throw ProcessControllerError.unsafeProcess(server.processID, "the process is no longer listening on port \(server.port)")
     }
 
-    guard currentServer.isPrimaryRuntime else {
+    guard currentServer.isPrimaryRuntime || isWorkspaceProfileRuntime(currentServer) else {
       throw ProcessControllerError.unsafeProcess(server.processID, "the current listener is not a developer runtime")
     }
 
@@ -398,6 +485,13 @@ public final class AppState {
   }
 
   public func startScript(_ script: PackageScript, in profile: WorkspaceProfile) {
+    if let active = visibleWorkspaceScripts.first(where: {
+      $0.profileID == profile.id && $0.scriptName == script.name && $0.isRunning
+    }) {
+      workspaceMessage = .info("\(profile.name): \(script.name) is already running as PID \(active.processID).")
+      return
+    }
+
     let runningID = UUID()
     do {
       let process = try processController.startScript(
@@ -437,6 +531,7 @@ public final class AppState {
       _ = try? processController.stop(processID: script.processID, force: false)
     }
     startedProcesses.removeValue(forKey: script.id)
+    workspaceDetectedScripts.removeAll { $0.processID == script.processID }
     markScriptFinished(script.id, status: 0)
   }
 
@@ -459,6 +554,7 @@ public final class AppState {
     guard runningScripts[index].isRunning else { return }
     runningScripts[index].isRunning = false
     appendLog("Exited with status \(status)", to: runningID)
+    Task { await refresh() }
     if status != 0, notificationSettings.managedProcessCrashEnabled {
       let script = runningScripts[index]
       Task {
@@ -494,6 +590,32 @@ public final class AppState {
       self?.updateChannel ?? .stable
     }
     updateService?.automaticallyChecksForUpdates = automaticallyChecksForUpdates
+  }
+}
+
+private extension AppState {
+  nonisolated static func scriptKey(_ script: RunningScript) -> String {
+    "\(script.profileID):\(script.scriptName)"
+  }
+
+  func collapsedManagedScripts(_ scripts: [RunningScript]) -> [RunningScript] {
+    let running = scripts.filter(\.isRunning)
+    let runningKeys = Set(running.map(Self.scriptKey))
+    var latestExitedByScript: [String: RunningScript] = [:]
+
+    for script in scripts where !script.isRunning && !runningKeys.contains(Self.scriptKey(script)) {
+      let key = Self.scriptKey(script)
+      if let existing = latestExitedByScript[key], existing.startedAt >= script.startedAt {
+        continue
+      }
+      latestExitedByScript[key] = script
+    }
+
+    return (running + latestExitedByScript.values)
+      .sorted {
+        if $0.isRunning != $1.isRunning { return $0.isRunning && !$1.isRunning }
+        return $0.startedAt > $1.startedAt
+      }
   }
 }
 

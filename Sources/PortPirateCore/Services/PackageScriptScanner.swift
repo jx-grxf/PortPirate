@@ -33,7 +33,7 @@ public enum PackageScriptScanner {
       return WorkspaceProfile(
         name: profileName,
         path: url.path,
-        packageManager: packageManager(for: url),
+        packageManager: packageManager(for: url, packageManagerField: root["packageManager"] as? String),
         scripts: scripts,
         expectedPorts: expectedPorts(from: scripts)
       )
@@ -48,7 +48,35 @@ public enum PackageScriptScanner {
     )
   }
 
-  public static func packageManager(for workspaceURL: URL) -> PackageManager {
+  public static func scanNearestWorkspace(from url: URL) throws -> WorkspaceProfile {
+    let fileManager = FileManager.default
+    var current = url.standardizedFileURL
+    let homePath = fileManager.homeDirectoryForCurrentUser.standardizedFileURL.path
+
+    while current.path != "/" {
+      if fileManager.fileExists(atPath: current.appendingPathComponent("package.json").path) {
+        let profile = try scanWorkspace(at: current)
+        return WorkspaceProfile(
+          id: WorkspaceProfile.stableID(for: profile.path),
+          name: profile.name,
+          path: profile.path,
+          packageManager: profile.packageManager,
+          scripts: profile.scripts,
+          expectedPorts: profile.expectedPorts
+        )
+      }
+      guard current.path.hasPrefix(homePath) else { break }
+      current.deleteLastPathComponent()
+    }
+
+    throw PackageScriptScannerError.folderUnreachable(url.lastPathComponent)
+  }
+
+  public static func packageManager(for workspaceURL: URL, packageManagerField: String? = nil) -> PackageManager {
+    if let declared = packageManager(from: packageManagerField) {
+      return declared
+    }
+
     let fileManager = FileManager.default
     if fileManager.fileExists(atPath: workspaceURL.appendingPathComponent("bun.lockb").path)
       || fileManager.fileExists(atPath: workspaceURL.appendingPathComponent("bun.lock").path) {
@@ -61,6 +89,25 @@ public enum PackageScriptScanner {
       return .yarn
     }
     return .npm
+  }
+
+  private static func packageManager(from value: String?) -> PackageManager? {
+    guard let name = value?
+      .split(separator: "@", maxSplits: 1, omittingEmptySubsequences: true)
+      .first?
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+      .lowercased()
+    else {
+      return nil
+    }
+
+    switch name {
+    case "npm": return .npm
+    case "pnpm": return .pnpm
+    case "yarn": return .yarn
+    case "bun": return .bun
+    default: return nil
+    }
   }
 
   public static func detectProjectKind(at workspaceURL: URL) -> PackageManager {
